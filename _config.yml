@@ -1,0 +1,6 @@
+# En el archivo _config.yml en la raíz de tu repositorio
+exclude:
+  - node_modules/ # Esto excluye la carpeta
+
+theme: minima
+  
