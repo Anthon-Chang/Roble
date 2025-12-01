@@ -18,7 +18,7 @@ const Navbar = ({ darkMode, setDarkMode }) => {
           <li><Link to="/nosotros" className="font-bold hover:text-amber-700 dark:hover:text-amber-400 dark:text-white">Nosotros</Link></li>
           <li><Link to="/servicios" className="font-bold hover:text-amber-700 dark:hover:text-amber-400 dark:text-white">Servicios</Link></li>
           <li><Link to="/contactanos" className="font-bold hover:text-amber-700 dark:hover:text-amber-400 dark:text-white">Contáctanos</Link></li>
-          <li><Link to="/verPlano" className="font-bold hover:text-amber-700 dark:hover:text-amber-400 dark:text-white">Planos</Link></li>
+          <li><Link to="/verPlano" className="font-bold hover:text-amber-700 dark:hover:text-amber-400 dark:text-white">Diseños</Link></li>
         </ul>
 
         <ul className="flex justify-center items-center gap-5 my-4">
