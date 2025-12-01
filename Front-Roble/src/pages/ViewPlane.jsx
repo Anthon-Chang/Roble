@@ -5,7 +5,7 @@ export const ViewPlane = () => {
   const [furnitureList, setFurnitureList] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 4; // solo 2 imágenes por página
+  const itemsPerPage = 4  ; // solo 2 imágenes por página
 
   useEffect(() => {
     async function loadFurniture() {
@@ -48,7 +48,7 @@ export const ViewPlane = () => {
         setSearchTerm(e.target.value);
         setCurrentPage(1); // reiniciar página al buscar
       }}
-      className="p-2 border rounded w-64 focus:outline-none focus:ring-2 focus:ring-amber-500"
+      className="p-2 border rounded w-64 focus:outline-none focus:ring-2 focus:ring-amber-500 text-black dark:text-white"
     />
     <button
       onClick={() => {
