@@ -16,20 +16,24 @@ const Profile = () => {
 
             <div className='flex justify-around gap-x-8 flex-wrap gap-y-8 md:flex-nowrap'>
 
-                {/* Fomrulario perfil */}
-                <div className='w-full md:w-1/2'>
-                    <FormProfile/>
-                </div>
-
-
                 {/* Card para mostrar el perfil y formulario para cambiar la contraseña */}
                 <div className='w-full md:w-1/2'>
                     <CardProfile/>
-                    
-                    <CardPassword/>
                 </div>
+            </div>
+            <div className='flex justify-around gap-x-8 flex-wrap gap-y-8 md:flex-nowrap'>
 
-
+            {/* Contenedor principal */}
+            <div className='w-full md:w-11/12 flex flex-col md:flex-row gap-x-8 mx-auto justify-center items-center'>
+                {/* Formulario perfil */}
+                <div className='w-full md:w-5/12'>
+                <FormProfile/>
+                </div>
+                {/* Card contraseña */}
+                <div className='w-full md:w-5/12'>
+                <CardPassword/>
+                </div>
+            </div>
             </div>
         </>
 
