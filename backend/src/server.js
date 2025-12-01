@@ -4,6 +4,7 @@ import cors from 'cors'
 
 import routerCarpinteros from './routers/carpintero_routes.js'
 import planRoutes from "./routers/planRoutes.js";
+import furnitureRoutes from './routers/furniture_routes.js';
 
 const app = express()
 dotenv.config()
@@ -27,6 +28,9 @@ app.use('/api/carpintero', routerCarpinteros)
 
 // Rutas de planes
 app.use("/api/plans", planRoutes)
+
+// Rutas de muebles
+app.use('/api/v1/furniture-proxy', furnitureRoutes)
 
 // Ruta no encontrada
 app.use((req, res) => res.status(404).send("Endpoint no encontrado - 404"))
