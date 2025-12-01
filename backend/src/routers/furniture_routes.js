@@ -1,23 +1,10 @@
-import express from "express";
+import { Router } from 'express';
+import { getAllFurniture, getFurnitureById } from '../controllers/furniture_controller.js';
 
-import upload from "../middlewares/upload.js";
-import {
-  getPlans,
-  getPlanById,
-  createPlan,
-  updatePlan,
-  deletePlan
-} from "../controllers/planController.js";
+const router = Router();
 
-const router = express.Router();
-
-router.get("/", getPlans);
-router.get("/:id", getPlanById);
-
-// IMPORTANTE: el campo must be "image"
-router.post("/", upload.single("image"), createPlan);
-
-router.put("/:id", updatePlan);
-router.delete("/:id", deletePlan);
+router.get('/', getAllFurniture);     // GET /api/v1/furniture-api-proxy
+router.get('/:id', getFurnitureById); // GET /api/v1/furniture-api-proxy/:id
 
 export default router;
+
