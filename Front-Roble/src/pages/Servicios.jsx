@@ -12,7 +12,7 @@ const Servicios = () => {
                         <div className='text-amber-900 border-2 absolute top-1/2 w-full z-0 pt-10' />
                     </div>
     
-                    <div className='my-10 flex justify-between flex-wrap gap-5'>
+                    <div className='py-25 my-10 flex flex-coljustify-between flex-wrap gap-5'>
     
                         <div className="text-center shadow-[0.1rem_0.1rem_1rem_rgba(0,0,0,0.3)] hover:shadow-[0.1rem_0.1rem_1rem_rgba(0,0,0,0.5)] transition-shadow duration-300 relative pt-4 sm:flex-1">
                             <GrUserWorker  className='inline text-5xl' />

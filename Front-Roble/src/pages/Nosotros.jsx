@@ -2,7 +2,7 @@ import NS from '../assets/Nosotros.jpg'
 import { RxDashboard } from "react-icons/rx";
 import { BsCashCoin } from "react-icons/bs";
 import { SiMaterialformkdocs } from "react-icons/si";
-import { IoChatbubbleEllipsesSharp } from "react-icons/io5";
+
 import { TbBadge3DFilled } from "react-icons/tb";
 import { GrUserWorker } from "react-icons/gr";
 import { IoIosPeople } from "react-icons/io";
@@ -33,10 +33,6 @@ return (
                             <li>
                                 <BsCashCoin className='inline text-2xl mr-2' />
                                 Pago agil
-                            </li>
-                            <li>
-                                < IoChatbubbleEllipsesSharp className='inline text-2xl mr-2' />
-                                chatea en tiempo real
                             </li>
                             <li>
                                 <IoIosPeople className='inline text-2xl mr-2' />
