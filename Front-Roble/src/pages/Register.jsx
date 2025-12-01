@@ -4,6 +4,7 @@ import { Link } from "react-router"
 import { useForm } from "react-hook-form"
 import { ToastContainer } from 'react-toastify'
 import { useFetch } from "../hooks/useFetch"
+import logo_forget from '../../public/images/login.webp'
 
 
 
@@ -140,9 +141,13 @@ export const Register = () => {
             </div>
 
             {/* Imagen */}
-            <div className="w-full sm:w-1/2 h-1/3 sm:h-screen bg-[url('/public/images/login.jpg')] bg-no-repeat 
-                bg-cover bg-center sm:block hidden">
-            </div>
+            <div className="hidden sm:block sm:w-1/2">
+                            <img 
+                                src={logo_forget} 
+                                alt="logo_login" 
+                                className="w-full h-full object-cover"
+                            />
+                            </div>
 
         </div>
     )
