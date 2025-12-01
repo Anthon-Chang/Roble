@@ -5,6 +5,7 @@ import {useFetch} from '../hooks/useFetch'
 import { ToastContainer } from 'react-toastify'
 import { useForm } from 'react-hook-form'
 import storeAuth from "../context/storeAuth"
+import logo from '../../public/images/login_2.webp'
 
 
 
@@ -32,7 +33,9 @@ const Login = () => {
             <ToastContainer />
 
             {/* Imagen */}
-            <div className="hidden sm:block sm:w-1/2 bg-[url('public/images/login_2.webp')] bg-contain bg-center bg-no-repeat bg-cover"></div>
+            <div className="hidden sm:block sm:w-1/2 bg-contain bg-center bg-no-repeat bg-cover">
+                <img src={logo} alt="logo_login" />
+            </div>
 
             <div className="w-full sm:w-1/2 flex justify-center items-center bg-white dark:bg-[#1e2939]">
 
