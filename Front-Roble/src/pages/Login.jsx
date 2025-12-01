@@ -1,0 +1,133 @@
+import { useState } from "react"
+import { MdVisibility, MdVisibilityOff } from "react-icons/md"
+import { Link, useNavigate } from "react-router"
+import {useFetch} from '../hooks/useFetch'
+import { ToastContainer } from 'react-toastify'
+import { useForm } from 'react-hook-form'
+import storeAuth from "../context/storeAuth"
+
+
+
+const Login = () => {
+    const [showPassword, setShowPassword] = useState(false);
+
+    const navigate = useNavigate()
+    const { register, handleSubmit, formState: { errors } } = useForm()
+    const  fetchDataBackend = useFetch()
+    const { setToken, setRol } = storeAuth()    
+
+    const loginUser = async(dataForm) => {
+        const url = `${import.meta.env.VITE_BACKEND_URL}/carpintero/login`
+        const response = await fetchDataBackend(url, dataForm,'POST')
+        setToken(response.token)
+        setRol(response.rol)
+        if(response){
+            navigate('/dashboard')
+        }
+    }
+
+    return (
+        <div className="flex flex-col sm:flex-row h-screen ">
+
+            <ToastContainer />
+
+            {/* Imagen */}
+            <div className="hidden sm:block sm:w-1/2 bg-[url('public/images/login_2.jpg')] bg-contain bg-center bg-no-repeat bg-cover"></div>
+
+            <div className="w-full sm:w-1/2 flex justify-center items-center bg-white dark:bg-[#1e2939]">
+
+                <div className="w-4/5">
+
+                    <h1 className="text-3xl font-semibold text-center">Bienvenido(a)</h1>
+                
+                    <p className="text-gray-400 text-center my-4">Por favor ingresa tus datos</p>
+
+
+                    {/* Formulario */}
+                    <form onSubmit={handleSubmit(loginUser)}>
+
+                        {/* Campo Correo */}
+                        <div className="mb-3">
+                            <label className="block text-sm font-semibold mb-1">Correo electrónico</label>
+                            <input
+                                type="email"
+                                placeholder="Ingresa tu correo"
+                                className="w-full rounded-md border border-gray-300 focus:ring-1 px-2 py-1 text-gray-500"
+                                {...register("email", { required: "El correo es obligatorio" })}
+                            />
+                            {errors.email && <p className="text-red-800">{errors.email.message}</p>}
+                        </div>
+
+
+                        {/* Campo Contraseña */}
+                        <div className="mb-3">
+                            
+                            <label className="block text-sm font-semibold mb-1">Contraseña</label>
+
+                            <div className="relative">
+                                <input
+                                    type={showPassword ? "text" : "password"}
+                                    placeholder="************"
+                                    className="w-full rounded-md border border-gray-300 px-3 py-2 pr-10"
+                                    {...register("password", { required: "La contraseña es obligatoria" })}
+                                />
+                                {errors.password && <p className="text-red-800">{errors.password.message}</p>}
+
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700 dark:hover:text-white"
+                                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                                >
+                                    {showPassword ? <MdVisibilityOff size={20} /> : <MdVisibility size={20} />}
+                                </button>
+                            </div>
+                        </div>
+
+
+                        {/* Botón login */}
+                        <button className="py-2 w-full block text-center bg-gray-500 text-slate-300 border rounded-xl 
+                            hover:scale-100 duration-300 hover:bg-gray-900 hover:text-white">Iniciar sesión</button>
+                        
+
+                    </form>
+
+
+                    {/* Separador */}
+                    <div className="mt-6 flex items-center text-gray-400">
+                        <hr className="flex-1" />
+                        <span className="px-2 text-sm">O</span>
+                        <hr className="flex-1" />
+                    </div>
+
+
+                    {/* Botón Google */}
+                    <button className="w-full mt-5 flex items-center justify-center border py-2 rounded-xl text-sm hover:bg-[#bb4d00] hover:text-white">
+                        <img className="w-5 mr-2" src="https://cdn-icons-png.flaticon.com/512/281/281764.png" />
+                        Sign in with Google
+                    </button>
+
+
+                    {/* Enlace para olvidaste tu contraseña */}
+                    <div className="mt-5 text-xs border-b-2 py-4 text-left">
+                        <Link to="/forgot/id" className="underline text-gray-400 hover:text-gray-900 dark:hover:text-white">
+                            ¿Olvidaste tu contraseña?
+                        </Link>
+                    </div>
+
+
+
+                    {/* Enlaces para volver o registrarse */}
+                    <div className="mt-3 flex justify-between text-sm">
+                        <Link to="/" className="underline text-gray-400 hover:text-gray-900 dark:hover:text-white">Regresar</Link>
+                        <Link to="/register" className="py-2 px-5 bg-[#f59e0b] text-white rounded-xl hover:bg-[#bb4d00]">Registrarse</Link>
+                    </div>
+
+
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default Login;
