@@ -1,64 +1,65 @@
-import { useForm } from "react-hook-form"
-import storeProfile from "../../context/storeProfile"
-import storeAuth from "../../context/storeAuth"
+import { useForm } from "react-hook-form";
+import storeProfile from "../../context/storeProfile";
+import storeAuth from "../../context/storeAuth";
 
 const CardPassword = () => {
+  const { register, handleSubmit, formState: { errors } } = useForm();
+  const { user, updatePasswordProfile } = storeProfile();
+  const { clearToken } = storeAuth();
 
-    const { register, handleSubmit, formState: { errors } } = useForm()
-    const {user,updatePasswordProfile} = storeProfile()
-    const { clearToken } = storeAuth()
+  const updatePassword = async (dataForm) => {
+    const url = `${import.meta.env.VITE_BACKEND_URL}/carpintero/actualizarpassword/${user._id}`;
+    const response = await updatePasswordProfile(url, dataForm);
+    if (response) clearToken();
+  };
 
-    const updatePassword = async (dataForm) => {
-        const url = `${import.meta.env.VITE_BACKEND_URL}/carpintero/actualizarpassword/${user._id}`
-        const response = await updatePasswordProfile(url,dataForm)
-        if(response){
-            clearToken()
-        }
-    }
+  return (
+    <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-md mx-auto mt-10">
+      
+      <h1 className='font-black text-2xl text-gray-700 dark:text-gray-200 mb-3'>Actualizar contraseña</h1>
+      <hr className='my-4 border-t-2 border-gray-300 dark:border-gray-600' />
 
-    return (
-        <>
-            <div className='mt-5'>
-                <h1 className='font-black text-2xl text-gray-500 mt-16'>Actualizar contraseña</h1>
-                <hr className='my-4 border-t-2 border-gray-300' />
-            </div>
+      <form onSubmit={handleSubmit(updatePassword)} className="space-y-4">
 
-            {/* Formulario */}
-            <form onSubmit={handleSubmit(updatePassword)}>
+        {/* Contraseña actual */}
+        <div>
+          <label className="block mb-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
+            Contraseña actual
+          </label>
+          <input
+            type="password"
+            placeholder="Ingresa tu contraseña actual"
+            className="w-full rounded-md border border-gray-300 dark:border-gray-600 py-2 px-3 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
+            {...register("passwordactual", { required: "La contraseña actual es obligatoria" })}
+          />
+          {errors.passwordactual && <p className="text-red-600 mt-1">{errors.passwordactual.message}</p>}
+        </div>
 
-                {/* Campo contraseña actual */}
-                <div>
-                    <label className="mb-2 block text-sm font-semibold">Contraseña actual</label>
-                    <input type="password" placeholder="Ingresa tu contraseña actual" 
-                    className="block w-full rounded-md border border-gray-300 py-1 px-2 text-gray-500 mb-5"
-                    {...register("passwordactual", { required: "La contraseña actual es obligatoria" })}
-                    />
-                    {errors.passwordactual && <p className="text-red-800">{errors.passwordactual.message}</p>}
-                </div>
+        {/* Nueva contraseña */}
+        <div>
+          <label className="block mb-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
+            Nueva contraseña
+          </label>
+          <input
+            type="password"
+            placeholder="Ingresa la nueva contraseña"
+            className="w-full rounded-md border border-gray-300 dark:border-gray-600 py-2 px-3 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
+            {...register("passwordnuevo", { required: "La nueva contraseña es obligatoria" })}
+          />
+          {errors.passwordnuevo && <p className="text-red-600 mt-1">{errors.passwordnuevo.message}</p>}
+        </div>
 
+        {/* Botón */}
+        <button
+          type="submit"
+          className="w-full bg-[#461901] hover:bg-amber-600 text-white py-2 rounded-md font-semibold transition-colors"
+        >
+          Cambiar contraseña
+        </button>
 
-                {/* Campo contraseña nueva */}
-                <div>
-                    <label className="mb-2 block text-sm font-semibold">Nueva contraseña</label>
-                    <input type="password" placeholder="Ingresa la nueva contraseña" 
-                    className="block w-full rounded-md border border-gray-300 py-1 px-2 text-gray-500 mb-5"
-                    {...register("passwordnuevo", { required: "La nueva contraseña es obligatoria" })}
-                    />
-                    {errors.passwordnuevo && <p className="text-red-800">{errors.passwordnuevo.message}</p>}
-                </div>
+      </form>
+    </div>
+  );
+};
 
-
-                {/* Botón para actualizar la contraseña */}
-                <input
-                    type="submit"
-                    className='bg-gray-800 w-full p-2 text-slate-300 uppercase 
-                    font-bold rounded-lg hover:bg-gray-600 cursor-pointer transition-all'
-                    value='Cambiar'
-                />
-
-            </form>
-        </>
-    )
-}
-
-export default CardPassword
+export default CardPassword;
