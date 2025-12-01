@@ -20,7 +20,7 @@ const sendMailToRegister = (userMail, token) => {
 }
 
 // =====================================
-// ENVÍO DE CORREO PARA RECUPERAR PASSWORD
+// ENVÍO DE CORREO PARA RECUPERAR PASSWORDo
 // =====================================
 const sendMailToRecoveryPassword = (userMail, token) => {
 
