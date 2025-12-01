@@ -17,7 +17,7 @@ const Login = () => {
     const { setToken, setRol } = storeAuth()    
 
     const loginUser = async(dataForm) => {
-        const url = `${import.meta.env.VITE_BACKEND_URL}/carpintero/login`
+        const url = `${import.meta.env.VITE_BACKEND_URL}/api/carpintero/login`
         const response = await fetchDataBackend(url, dataForm,'POST')
         setToken(response.token)
         setRol(response.rol)
@@ -131,3 +131,4 @@ const Login = () => {
 };
 
 export default Login;
+
