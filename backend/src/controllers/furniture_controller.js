@@ -7,7 +7,7 @@ const API_BASE_URL = 'https://furniture-api.fly.dev';
 // ----------------------------------------------
 export async function getAllFurniture(req, res) {
   try {
-    const response = await axios.get(`${API_BASE_URL}/v1/products`);
+    const response = await axios.get(`${API_BASE_URL}/v1/products?limit=50&offset=0`);
 
     const productList = response.data?.data || [];
 
