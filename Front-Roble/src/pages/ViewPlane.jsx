@@ -5,7 +5,7 @@ export const ViewPlane = () => {
   const [furnitureList, setFurnitureList] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 2; // solo 2 imágenes por página
+  const itemsPerPage = 4; // solo 2 imágenes por página
 
   useEffect(() => {
     async function loadFurniture() {
@@ -77,7 +77,7 @@ export const ViewPlane = () => {
                 <img
                   src={item.image_path}
                   alt={item.name}
-                  className="w-100 h-100 object-contain mb-2 rounded"
+                  className="w-60 h-60 object-contain mb-2 rounded"
                 />
                 <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 text-center">
                   {item.name}
