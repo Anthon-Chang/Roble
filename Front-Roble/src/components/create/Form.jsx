@@ -164,8 +164,9 @@ export const Form = () => {
         setStateAvatar((prev) => ({ ...prev, loading: true }));
 
         try {
+          const API_URL = import.meta.env.VITE_BACKEND_URL;
           const response = await fetch(
-            `http://localhost:4000/api/models/search?name=${encodeURIComponent(
+            `${API_URL}/api/models/search?name=${encodeURIComponent(
               stateAvatar.prompt
             )}`
           );
@@ -251,3 +252,4 @@ export const Form = () => {
     </form>
   );
 };
+
