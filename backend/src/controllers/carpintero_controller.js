@@ -1,6 +1,7 @@
 import carpintero from "../models/carpintero.js"
 import { sendMailToRecoveryPassword, sendMailToRegister } from "../helpers/sendMail.js"
 import { crearTokenJWT } from "../middlewares/JWT.js"
+import mongoose from "mongoose"
 
 
 // =============================

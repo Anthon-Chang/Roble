@@ -6,7 +6,7 @@ import sendMail from "../config/nodemailer.js"
 const sendMailToRegister = (userMail, token) => {
     return sendMail(
         userMail,
-        "Bienvenido a SMARTCARP 🪚🧰", 
+        "Bienvenido a ROBLE 🪚🧰", 
         ` 
             <h1>Confirma tu cuenta</h1> 
             <p>Hola, haz clic en el siguiente enlace para confirmar tu cuenta:</p> 
@@ -14,13 +14,13 @@ const sendMailToRegister = (userMail, token) => {
             Confirmar cuenta 
             </a> 
             <hr> 
-            <footer>El equipo de SMARTCARP te da la bienvenida.</footer> 
+            <footer>El equipo de ROBLE te da la bienvenida.</footer> 
         `
     )
 }
 
 // =====================================
-// ENVÍO DE CORREO PARA RECUPERAR PASSWORDo
+// ENVÍO DE CORREO PARA RECUPERAR PASSWORD
 // =====================================
 const sendMailToRecoveryPassword = (userMail, token) => {
 
@@ -28,13 +28,13 @@ const sendMailToRecoveryPassword = (userMail, token) => {
         userMail,
         "Recupera tu contraseña - SMARTCARP",
         `
-            <h1>SMARTCARP 🪚🧰</h1>
+            <h1>ROBLE 🪚🧰</h1>
             <p>Has solicitado restablecer tu contraseña.</p>
             <a href="${process.env.URL_FRONTEND}reset/${token}">
             Clic para restablecer tu contraseña
             </a>
             <hr>
-            <footer>El equipo de SMARTCARP está para ayudarte.</footer>
+            <footer>El equipo de ROBLE está para ayudarte.</footer>
         `
     )
 }
