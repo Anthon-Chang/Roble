@@ -1,118 +1,105 @@
-import { Link, Outlet, useLocation } from 'react-router'
-import FP from '../assets/fotoPerfil.jpeg'
-import storeAuth from '../context/storeAuth'
-import storeProfile from '../context/storeProfile'
-
-
+import { Link, Outlet } from 'react-router';
+import { useState, useEffect, useRef } from 'react';
+import FP from '../assets/fotoPerfil.jpeg';
+import storeAuth from '../context/storeAuth';
+import storeProfile from '../context/storeProfile';
 
 const Dashboard = () => {
-    const location = useLocation()
-    const urlActual = location.pathname
-    const { clearToken } = storeAuth()
-    const{user} = storeProfile()
+    const { clearToken } = storeAuth();
+    const { user } = storeProfile();
+    const [menuOpen, setMenuOpen] = useState(false);
+    const menuRef = useRef(null); // <-- Referencia al menú
 
+    // Cerrar menú al hacer clic fuera
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                setMenuOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
 
     return (
-    
-        <div className='md:flex md:min-h-screen'>
-
-
-            {/* Menú de navegación lateral */}
-            <div className='md:w-1/5 bg-gray-800 px-5 py-4'>
-
-                <img src={FP} alt="img-client" className="m-auto mt-8 
-                    p-1 border-2 border-slate-500 rounded-full" width={120} height={120} />
-
-
-                {/* Nombre de usuario */}
-                <p className='text-slate-400 text-center my-4 text-sm'> <span className='bg-green-600 w-3 h-3 
-                    inline-block rounded-full'></span> Bienvenido - {user?.nombre} </p>
-                
-
-                {/* Rol de usuario */}
-                <p className='text-slate-400 text-center my-4 text-sm'> Rol - {user?.rol} </p>
-                
-                
-                <hr className="mt-5 border-slate-500" />
-
-
-                {/* Enlaces de navegación*/}
-                <ul className="mt-5">
-
-                    {/* Enlaces a Dashboard*/}
-                    <li className="text-center">
-                        <Link to='/dashboard' 
-                        className={`${urlActual === '/dashboard' ? 'text-slate-200 bg-gray-900 px-3 py-2 rounded-md text-center' : 'text-slate-600'} text-xl block mt-2 hover:text-slate-600`}>Dashboard</Link>
-                    </li>
-
-
-                    {/* Enlaces a Perfil*/}
-                    <li className="text-center">
-                        <Link to='/dashboard/profile' 
-                        className={`${urlActual === '/dashboard/profile' ? 'text-slate-200 bg-gray-900 px-3 py-2 rounded-md text-center' : 'text-slate-600'} text-xl block mt-2 hover:text-slate-600`}>Perfil</Link>
-                    </li>
-
-
-                    {/* Enlaces a Listar */}
-                    <li className="text-center">
-                        <Link to='/dashboard/list' 
-                        className={`${urlActual === '/dashboard/list' ? 'text-slate-200 bg-gray-900 px-3 py-2 rounded-md text-center' : 'text-slate-600'} text-xl block mt-2 hover:text-slate-600`}>Listar</Link>
-                    </li>
-
-
-                    {/* Enlaces a Crear */}
-                    <li className="text-center">
-                        <Link to='/dashboard/create' 
-                        className={`${urlActual === '/dashboard/create' ? 'text-slate-100 bg-gray-900 px-3 py-2 rounded-md text-center' : 'text-slate-600'} text-xl block mt-2 hover:text-slate-600`}>Crear</Link>
-                    </li>
-
-
-                    {/* Enlaces a Chat */}
-                    <li className="text-center">
-                        <Link to='/dashboard/chat' 
-                        className={`${urlActual === '/dashboard/chat' ? 'text-slate-100 bg-gray-900 px-3 py-2 rounded-md text-center' : 'text-slate-600'} text-xl block mt-2 hover:text-slate-600`}>Chat</Link>
-                    </li>
-                </ul>
-
-            </div>
-
-
-
-            <div className='flex-1 flex flex-col justify-between h-screen bg-gray-100'>
-
-                {/* Menú de navegación superior */}
-                <div className='bg-gray-800 py-2 flex md:justify-end items-center gap-5 justify-center'>
-                
-                    {/* Nombre de usuario */}
-                    <div className='text-md font-semibold text-slate-100'>
-                        Usuario - {user?.nombre} 
-                    </div>
-                
-                
-                    <div>
-                        <img src="https://cdn-icons-png.flaticon.com/512/4715/4715329.png" alt="img-client" className="border-2 border-green-600 rounded-full" width={50} height={50} />
-                    </div>
-                
-
-                    {/* Botón salir */}
-                    <div>
-                        <Link to='/' className=" text-white mr-3 text-md block hover:bg-red-900 text-center
-                        bg-red-800 px-4 py-1 rounded-lg" onClick={() => clearToken()}>Salir</Link>
-                    </div>
-                
+        <div className='flex-1 flex flex-col justify-between h-screen bg-gray-100'>
+            {/* Navbar */}
+            <div className='bg-[#461901] flex items-center justify-between px-5 relative'>
+                <div className='flex items-center gap-3'>
+                    <img src="/logo.png" alt="Logo Roble" className="w-20 h-20" />
+                    <span className='text-xl font-bold text-slate-100'>Roble</span>
                 </div>
-                
-                
-                {/* Contenido para mostra el contenido de las páginas internas */}
-                <div className='overflow-y-scroll p-8'>
-                    <Outlet />
+
+                {/* Usuario (click para desplegar menú) */}
+                <div 
+                    className='flex items-center gap-3 cursor-pointer relative'
+                    onClick={() => setMenuOpen(!menuOpen)}
+                    ref={menuRef} // <-- Asociamos la ref aquí
+                >
+                    <span className='text-md font-semibold text-slate-100'>{user?.nombre}</span>
+                    <span className='text-md font-semibold text-slate-100'>{user?.apellido}</span>
+                    
+                    <img 
+                        src={FP} 
+                        alt="img-client" 
+                        className="border-2 border-green-600 rounded-full w-10 h-10" 
+                    />
+
+                    {/* Menú desplegable */}
+                    {menuOpen && (
+                        <div className='absolute top-full right-0 bg-[#461901] text-left py-2 shadow-lg z-10 rounded-md min-w-[300px]'>
+                            <div className='flex items-center gap-3 px-3 py-2 border-b border-slate-500'>
+                                <img src={FP} alt="Usuario" className="w-20 h-20 rounded-full border-2 border-green-600"/>
+                                <div>
+                                    <p className='text-slate-100 font-semibold'>{user?.nombre}</p>
+                                    <p className='text-slate-400 text-sm'>Rol - {user?.rol}</p>
+                                </div>
+                            </div>
+                            <ul className='mt-2'>
+                                <li className='my-1'>
+                                    <Link to='/dashboard/profile' className='block text-slate-100 hover:bg-gray-900 px-3 py-2 rounded-md text-center'>
+                                        Perfil
+                                    </Link>
+                                </li>
+                                <li className='my-1'>
+                                    <Link to='/dashboard' className='block text-slate-100 hover:bg-gray-900 px-3 py-2 rounded-md text-center'>
+                                        Dashboard
+                                    </Link>
+                                </li>
+                                <li className='my-1'>
+                                    <Link to='/dashboard/list' className='block text-slate-100 hover:bg-gray-900 px-3 py-2 rounded-md text-center'>
+                                        Listar
+                                    </Link>
+                                </li>
+                                <li className='my-1'>
+                                    <Link to='/dashboard/create' className='block text-slate-100 hover:bg-gray-900 px-3 py-2 rounded-md text-center'>
+                                        Crear
+                                    </Link>
+                                </li>
+                                <li className='my-1'>
+                                    <button
+                                        onClick={() => clearToken()}
+                                        className="w-full text-white px-3 py-2 rounded-md text-center"
+                                    >
+                                        Salir
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                    )}
                 </div>
             </div>
 
-
-
+            {/* Contenido */}
+            <div className='overflow-y-scroll p-8 flex-1 '>
+                <Outlet />
+            </div>
         </div>
-    )
-}
+    );
+};
 
-export default Dashboard
+export default Dashboard;
