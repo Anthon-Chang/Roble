@@ -32,7 +32,7 @@ const Login = () => {
             <ToastContainer />
 
             {/* Imagen */}
-            <div className="hidden sm:block sm:w-1/2 bg-[url('public/images/login_2.jpg')] bg-contain bg-center bg-no-repeat bg-cover"></div>
+            <div className="hidden sm:block sm:w-1/2 bg-[url('public/images/login_2.webp')] bg-contain bg-center bg-no-repeat bg-cover"></div>
 
             <div className="w-full sm:w-1/2 flex justify-center items-center bg-white dark:bg-[#1e2939]">
 
