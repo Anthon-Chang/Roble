@@ -35,6 +35,8 @@ app.use('/api/v1/furniture', furnitureRoutes)
 
 // Rutas de modelos 3D
 app.use("/api/models", model3dRoutes);
+//  Aquí debes ponerlo
+app.use("/uploads", express.static("uploads"));
 // Ruta no encontrada
 app.use((req, res) => res.status(404).send("Endpoint no encontrado - 404"))
 
