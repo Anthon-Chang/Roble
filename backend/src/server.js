@@ -31,7 +31,7 @@ app.use('/api/carpintero', routerCarpinteros)
 app.use("/api/plans", planRoutes)
 
 // Rutas de muebles
-app.use('/api/v1/furniture-proxy', furnitureRoutes)
+app.use('/api/v1/furniture', furnitureRoutes)
 
 // Rutas de modelos 3D
 app.use("/api/models", model3dRoutes);
