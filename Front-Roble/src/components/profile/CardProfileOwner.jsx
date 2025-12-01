@@ -20,7 +20,7 @@ export const CardProfileOwner = () => {
                 <b>Celular:</b><p className="inline-block ml-3"></p>
             </div>
             <div className="self-start">
-                <b>Nombre de la mascota:</b><p className="inline-block ml-3"></p>
+                <b>Producto:</b><p className="inline-block ml-3"></p>
             </div>
         </div>
     )

@@ -1,54 +1,36 @@
-import storeProfile from "../../context/storeProfile"
+import storeProfile from "../../context/storeProfile";
 
 export const CardProfile = () => {
+  const { user } = storeProfile();
 
-    const {user} = storeProfile()
+  return (
+    <div className="bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 
+                    h-auto p-6 flex flex-col items-center justify-between shadow-xl rounded-lg 
+                    text-gray-800 dark:text-gray-200 space-y-3">
 
-    return (
+      {/* Imagen del usuario */}
+      <div className="relative">
+        <img 
+          src={user?.avatar || "https://cdn-icons-png.flaticon.com/512/4715/4715329.png"} 
+          alt="img-client" 
+          className="m-auto rounded-full border-2 border-amber-700" 
+          width={120} 
+          height={120} 
+        />
+        <label className="absolute bottom-0 right-0 bg-amber-700 text-white rounded-full p-2 cursor-pointer hover:bg-amber-500 transition-colors">
+          📷
+          <input type="file" accept="image/*" className="hidden" />
+        </label>
+      </div>
 
-        <div className="bg-white border border-slate-200 h-auto p-4 
-                        flex flex-col items-center justify-between shadow-xl rounded-lg">
-
-            <div className="relative">
-
-                <img src="https://cdn-icons-png.flaticon.com/512/4715/4715329.png" alt="img-client" className="m-auto rounded-full border-2 border-gray-300" width={120} height={120} />
-                
-                <label className="absolute bottom-0 right-0 bg-blue-400  text-white rounded-full p-2 cursor-pointer hover:bg-emerald-400">📷
-                    <input type="file" accept="image/*" className="hidden" />
-                </label>
-
-            </div>
-
-
-            {/* Campo Nombre */}
-            <div className="self-start">
-                <b>Nombre:</b><p className="inline-block ml-3">{user?.nombre}</p>
-            </div>
-
-
-            {/* Campo Apellido */}
-            <div className="self-start">
-                <b>Apellido:</b><p className="inline-block ml-3">{user?.apellido}</p>
-            </div >
-
-
-            {/* Campo Dirección */}
-            <div className="self-start">
-                <b>Dirección:</b><p className="inline-block ml-3">{user?.direccion}</p>
-            </div>
-
-
-            {/* Campo Celular */}
-            <div className="self-start">
-                <b>Celular:</b><p className="inline-block ml-3">{user?.celular}</p>
-            </div>
-
-            
-            {/* Campo Correo Electrónico */}
-            <div className="self-start">
-                <b>Correo:</b><p className="inline-block ml-3">{user?.email}</p>
-            </div>
-        
-        </div>
-    )
-}
+      {/* Información del usuario */}
+      <div className="w-full space-y-2">
+        <div className="flex"><b>Nombre:</b><p className="ml-2">{user?.nombre || "--"}</p></div>
+        <div className="flex"><b>Apellido:</b><p className="ml-2">{user?.apellido || "--"}</p></div>
+        <div className="flex"><b>Dirección:</b><p className="ml-2">{user?.direccion || "--"}</p></div>
+        <div className="flex"><b>Celular:</b><p className="ml-2">{user?.celular || "--"}</p></div>
+        <div className="flex"><b>Correo:</b><p className="ml-2">{user?.email || "--"}</p></div>
+      </div>
+    </div>
+  );
+};
