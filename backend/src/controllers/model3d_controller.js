@@ -42,3 +42,39 @@ export const createModel = async (req, res) => {
     });
   }
 };
+
+export const searchModelByName = async (req, res) => {
+  try {
+    const { name } = req.query;
+
+    if (!name) {
+      return res.status(400).json({
+        status: "error",
+        message: "El parámetro 'name' es obligatorio",
+      });
+    }
+
+    const model = await Model3D.findOne({
+      name: { $regex: new RegExp(name, "i") }, // búsqueda flexible
+    });
+
+    if (!model) {
+      return res.status(404).json({
+        status: "error",
+        message: "Modelo no encontrado",
+      });
+    }
+
+    res.status(200).json({
+      status: "success",
+      data: model,
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      status: "error",
+      message: "Error al buscar el modelo",
+      details: err.message,
+    });
+  }
+};

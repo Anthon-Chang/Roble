@@ -1,14 +1,50 @@
 import { useState } from "react";
 import modelGif from "../../../public/images/3d-model.gif";
+import ThreeViewer from "../model3D/model3DViewer.jsx";
+
 
 export const Form = () => {
   const [stateAvatar, setStateAvatar] = useState({
     generatedImage: modelGif,
     prompt: "",
     loading: false,
+    modelUrl: null, // ⬅️ Nuevo: aquí guardamos el GLB encontrado
   });
 
   const [selectedOption, setSelectedOption] = useState("ia");
+
+  // 🔎 Función para buscar un modelo 3D por nombre en tu API
+  const handleSearchModel = async () => {
+    if (!stateAvatar.prompt.trim()) return;
+
+    try {
+      setStateAvatar((prev) => ({ ...prev, loading: true }));
+
+      const res = await fetch(
+        `https://furniture-api.fly.dev/v1/products?search=${stateAvatar.prompt}`
+      );
+      const data = await res.json();
+
+      if (!data || data.count === 0) {
+        alert("No se encontró ningún modelo con ese nombre.");
+        setStateAvatar((prev) => ({ ...prev, loading: false }));
+        return;
+      }
+
+      // Tomamos el primer resultado
+      const model = data.products[0].modelUrl;
+
+      setStateAvatar((prev) => ({
+        ...prev,
+        loading: false,
+        modelUrl: model, //  cargamos el GLB al estado
+      }));
+    } catch (error) {
+      console.error(error);
+      alert("Error al buscar el modelo 3D.");
+      setStateAvatar((prev) => ({ ...prev, loading: false }));
+    }
+  };
 
   return (
     <form className="space-y-10">
@@ -107,32 +143,64 @@ export const Form = () => {
               </label>
             </div>
 
-            {/* Imagen con IA */}
-            {selectedOption === "ia" && (
-              <div className="space-y-4">
-                <input
-                  type="text"
-                  placeholder="Ingresa el prompt"
-                  value={stateAvatar.prompt}
-                  onChange={(e) => setStateAvatar(prev => ({ ...prev, prompt: e.target.value }))}
-                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 py-2 px-3 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                />
-                <button
-                  type="button"
-                  className="w-full py-2 bg-amber-700 text-white rounded-lg hover:bg-amber-800 transition-all"
-                  disabled={stateAvatar.loading}
-                >
-                  {stateAvatar.loading ? "Generando..." : "Generar modelo 3D"}
-                </button>
-                {stateAvatar.generatedImage && (
-                  <img
-                    src={stateAvatar.generatedImage}
-                    alt="3D Avatar"
-                    className="w-40 h-40 object-contain rounded-md border border-gray-300 dark:border-gray-600"
-                  />
-                )}
-              </div>
-            )}
+           {/* Imagen 3D*/}
+{selectedOption === "ia" && (
+  <div className="space-y-4">
+    <input
+      type="text"
+      placeholder="Ingresa el prompt"
+      value={stateAvatar.prompt}
+      onChange={(e) =>
+        setStateAvatar((prev) => ({ ...prev, prompt: e.target.value }))
+      }
+      className="w-full rounded-md border border-gray-300 dark:border-gray-600 py-2 px-3 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
+    />
+
+    <button
+      type="button"
+      className="w-full py-2 bg-amber-700 text-white rounded-lg hover:bg-amber-800 transition-all"
+      disabled={stateAvatar.loading}
+      onClick={async () => {
+        setStateAvatar((prev) => ({ ...prev, loading: true }));
+
+        try {
+          const response = await fetch(
+            `http://localhost:4000/api/models/search?name=${encodeURIComponent(
+              stateAvatar.prompt
+            )}`
+          );
+
+          const data = await response.json();
+
+          if (!data.data) {
+            alert("No se encontró un modelo con ese nombre");
+            setStateAvatar((prev) => ({ ...prev, loading: false }));
+            return;
+          }
+
+          setStateAvatar((prev) => ({
+            ...prev,
+            modelUrl: data.data.modelUrl,
+            loading: false,
+          }));
+        } catch (err) {
+          console.error("Error al buscar modelo:", err);
+          setStateAvatar((prev) => ({ ...prev, loading: false }));
+        }
+      }}
+    >
+      {stateAvatar.loading ? "Buscando..." : "Buscar modelo 3D"}
+    </button>
+
+    {/* 🔥 RENDERIZAR MODELO 3D */}
+    {stateAvatar.modelUrl && (
+      <div className="mt-6">
+        <ThreeViewer modelUrl={stateAvatar.modelUrl} />
+      </div>
+    )}
+  </div>
+)}
+
 
             {/* Subir imagen */}
             {selectedOption === "upload" && (
