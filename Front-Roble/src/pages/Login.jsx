@@ -33,9 +33,13 @@ const Login = () => {
             <ToastContainer />
 
             {/* Imagen */}
-            <div className="hidden sm:block sm:w-1/2 bg-contain bg-center bg-no-repeat bg-cover">
-                <img src={logo} alt="logo_login" />
-            </div>
+            <div className="hidden sm:block sm:w-1/2">
+                <img 
+                    src={logo} 
+                    alt="logo_login" 
+                    className="w-full h-full object-cover"
+                />
+                </div>
 
             <div className="w-full sm:w-1/2 flex justify-center items-center bg-white dark:bg-[#1e2939]">
 
