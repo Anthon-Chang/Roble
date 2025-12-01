@@ -37,19 +37,31 @@ export const ViewPlane = () => {
     <section id="verPlano" className="container mx-auto py-8">
       {/* Contenedor flex para título y buscador */}
       <div className="flex flex-col sm:flex-row items-center justify-between mb-6">
-        <h2 className="font-semibold text-3xl mb-4 sm:mb-0">Planos Disponibles</h2>
+  <h2 className="font-semibold text-3xl mb-4 sm:mb-0">Diseños Disponibles</h2>
 
-        <input
-          type="text"
-          placeholder="Buscar producto..."
-          value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-            setCurrentPage(1); // reiniciar página al buscar
-          }}
-          className="p-2 border rounded w-64 focus:outline-none focus:ring-2 focus:ring-amber-500"
-        />
-      </div>
+  <div className="flex items-center space-x-2">
+    <input
+      type="text"
+      placeholder="Buscar producto..."
+      value={searchTerm}
+      onChange={(e) => {
+        setSearchTerm(e.target.value);
+        setCurrentPage(1); // reiniciar página al buscar
+      }}
+      className="p-2 border rounded w-64 focus:outline-none focus:ring-2 focus:ring-amber-500"
+    />
+    <button
+      onClick={() => {
+        console.log("Buscar:", searchTerm);
+        // Aquí puedes agregar la función de búsqueda
+      }}
+      className="p-2 bg-amber-500 text-white rounded"
+    >
+      🔍
+    </button>
+  </div>
+</div>
+
 
       {currentItems.length === 0 ? (
         <p className="text-lg text-gray-700">No se encontraron productos</p>

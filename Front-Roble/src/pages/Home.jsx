@@ -34,16 +34,16 @@
                 Visualiza diseños reales creados con modelado 3D y arquitectura digital.
             </p>
 
-            <p className='text-2xl my-6 font-sans'>Modelo 3D, chatea, explora y más ...</p>
+            <p className='text-2xl my-6 font-sans'>Modelo 3D, explora y más ...</p>
 
             <Link
                 to="/viewPlane"
                 className='block bg-[#f59e0b] w-40 py-2 mx-auto text-white rounded-2xl text-center sm:mx-0 hover:bg-amber-700'
             >
-                ver planos
+                ver diseños
             </Link>
 
-            <p className='font-bold text-left my-4 md:text-2xl'>encuentranos en:</p>
+            <p className='font-bold text-left my-4 md:text-2xl'>Descarga nuestra App:</p>
 
             <div className="flex justify-center gap-4">
                 <a
