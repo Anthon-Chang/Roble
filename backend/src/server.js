@@ -5,7 +5,7 @@ import cors from 'cors'
 import routerCarpinteros from './routers/carpintero_routes.js'
 import planRoutes from "./routers/planRoutes.js";
 import furnitureRoutes from './routers/furniture_routes.js';
-import model3dRoutes from './models/modelo3D.js';
+import model3dRoutes from "./routers/model3d_routes.js";
 
 const app = express()
 dotenv.config()
