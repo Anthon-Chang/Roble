@@ -18,7 +18,7 @@ export const connectDB = async () => {
         `✅ Base de datos conectada: ${connection.host}:${connection.port}`
     );
     } catch (error) {
-        nsole.error("❌ Error al conectar a MongoDB:", error.message);
+        console.error("❌ Error al conectar a MongoDB:", error.message);
         process.exit(1);
     }
 };
