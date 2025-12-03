@@ -8,7 +8,7 @@ const FormularioPerfil = () => {
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
 
   const updateUser = (dataForm) => {
-    const url = `${import.meta.env.VITE_BACKEND_URL}/carpintero/actualizarperfil/${user._id}`;
+    const url = `${import.meta.env.VITE_BACKEND_URL}/api/carpintero/actualizarperfil/${user._id}`;
     updateProfile(url, dataForm);
   };
 
