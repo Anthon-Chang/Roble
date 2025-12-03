@@ -8,7 +8,7 @@ const CardPassword = () => {
   const { clearToken } = storeAuth();
 
   const updatePassword = async (dataForm) => {
-    const url = `${import.meta.env.VITE_BACKEND_URL}/carpintero/actualizarpassword/${user._id}`;
+    const url = `${import.meta.env.VITE_BACKEND_URL}/api/carpintero/actualizarpassword/${user._id}`;
     const response = await updatePasswordProfile(url, dataForm);
     if (response) clearToken();
   };
