@@ -1,6 +1,7 @@
 import { FaFacebook } from "react-icons/fa";
 import { FaSquareInstagram } from "react-icons/fa6";
 import { FaXTwitter } from "react-icons/fa6";
+import contac from '../assets/contacto.webp'
 
 const Contactanos = () => {
   return (
@@ -10,7 +11,7 @@ const Contactanos = () => {
 
       <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-20">
         <img 
-            src="/src/assets/contacto.png"
+            src={contac}
             alt="contacto"
             className="w-full max-w-md lg:max-w-xl h-auto object-contain"
         />
