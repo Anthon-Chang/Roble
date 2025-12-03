@@ -24,7 +24,7 @@
 
     return (
         <>
-        <main className='text-center py-6 px-8 bg-[#fff7ed] dark:bg-[#1e2939] md:text-left md:flex justify-between items-start gap-10 md:py-1'>
+        <main className='text-center py-6 px-8 bg-[#fff7ed] dark:bg-[#1e2939] md:text-left md:flex justify-between items-start gap-10 md:py-30 md:px-20 lg:px-32'>
             <div className="flex-1">
             <h1 className='font-lato font-extrabold text-amber-800 uppercase text-4xl my-4 md:text-6xl'>
                 Explora Nuestros Planos de Interiores
@@ -45,13 +45,13 @@
 
             <p className='font-bold text-left my-4 md:text-2xl'>Descarga nuestra App:</p>
 
-            <div className="flex justify-center gap-4">
+            <div className="flex justify-center gap-15 py-15">
                 <a
                 href="https://apps.apple.com/app"
                 target="_blank"
                 rel="noopener noreferrer"
                 >
-                <img src={AppStoreImage} alt="App Store" className="h-12" />
+                <img src={AppStoreImage} alt="App Store" className="h-15" />
                 </a>
 
                 <a
@@ -59,7 +59,7 @@
                 target="_blank"
                 rel="noopener noreferrer"
                 >
-                <img src={GooglePlayImage} alt="Google Play" className="h-12" />
+                <img src={GooglePlayImage} alt="Google Play" className="h-15" />
                 </a>
             </div>
             </div>
