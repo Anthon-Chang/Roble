@@ -26,11 +26,6 @@ export default function Panel() {
           <p className="text-3xl font-semibold text-gray-800">185</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-sm text-gray-500">Citas hoy</p>
-          <p className="text-3xl font-semibold text-gray-800">5</p>
-        </div>
-
       </section>
 
 
