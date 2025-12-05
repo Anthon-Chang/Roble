@@ -39,7 +39,30 @@ const sendMailToRecoveryPassword = (userMail, token) => {
     )
 }
 
+// =====================================
+// ENVÍO DE CORREO CON CREDENCIALES PARA CLIENTE
+// =====================================
+const sendMailToOwner  = (userMail, password) => {
+    return sendMail(
+        userMail,
+        "Bienvenido a ROBLE - Tus credenciales de acceso",
+        `
+            <h1>ROBLE 🪚🧰</h1>
+            <p>Gracias por unirte a nuestra plataforma.</p>
+            <p>A continuación encontrarás tus credenciales de acceso:</p>
+
+            <p><strong>Contraseña temporal:</strong> ${password}</p>
+
+            <a href="${process.env.URL_FRONTEND}login">Iniciar sesión</a>
+
+            <hr>
+            <footer>El equipo de <strong>ROBLE</strong> está para servirte.</footer>
+        `
+    )
+}
+
 export {
-sendMailToRegister,
-sendMailToRecoveryPassword
+    sendMailToRegister,
+    sendMailToRecoveryPassword,
+    sendMailToOwner 
 }
