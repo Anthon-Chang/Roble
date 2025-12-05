@@ -6,6 +6,9 @@ import routerCarpinteros from './routers/carpintero_routes.js'
 import planRoutes from "./routers/planRoutes.js";
 import furnitureRoutes from './routers/furniture_routes.js';
 import model3dRoutes from "./routers/model3d_routes.js";
+import routerProyectos from './routers/proyecto_routes.js';
+
+import fileUpload from "express-fileupload";
 
 const app = express()
 dotenv.config()
@@ -13,6 +16,13 @@ dotenv.config()
 // Middlewares
 app.use(express.json())
 app.use(cors())
+
+app.use(
+    fileUpload({
+        useTempFiles: true,
+        tempFileDir: "./uploads",
+    })
+);
 
 // Variables globales
 app.set('port', process.env.PORT || 4000)
@@ -25,7 +35,12 @@ app.get('/', (req, res) => res.send("Server on"))
 // -------------------------------
 
 // Todo lo de carpinteros va aquí:
+
+// Rutas de carpinteros
 app.use('/api/carpintero', routerCarpinteros)
+
+// Rutas de proyectos
+app.use("/api/proyecto", routerProyectos)
 
 // Rutas de planes
 app.use("/api/plans", planRoutes)
