@@ -36,9 +36,7 @@ const Login = () => {
     />
 
     {/* Contenido encima */}
-    <div className="relative z-10">
-
-        <ToastContainer />
+    <ToastContainer />
 
         <div class="w-11/12 sm:w-150 min-h-[700px] bg-white/80 dark:bg-[#1e2939]/80 p-8 rounded-xl shadow-xl backdrop-blur flex flex-col items-left justify-center">
 
@@ -125,7 +123,6 @@ const Login = () => {
                 </Link>
             </div>
         </div>
-    </div>
 
         
 
