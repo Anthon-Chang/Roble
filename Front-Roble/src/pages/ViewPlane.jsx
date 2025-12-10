@@ -68,7 +68,7 @@ export const ViewPlane = () => {
       ) : (
         <>
           {/* Mostrar las imágenes actuales */}
-          <div className="flex justify-center gap-6 mb-4 flex-wrap">
+          <div className="flex justify-center gap-40 mb-4 flex-wrap">
             {currentItems.map((item) => (
               <div
                 key={item.id}
@@ -77,7 +77,7 @@ export const ViewPlane = () => {
                 <img
                   src={item.image_path}
                   alt={item.name}
-                  className="w-60 h-60 object-contain mb-2 rounded"
+                  className="w-110 h-110 object-contain mb-2 rounded"
                 />
                 <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 text-center">
                   {item.name}
