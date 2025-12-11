@@ -10,6 +10,8 @@ import routerProyectos from './routers/proyecto_routes.js';
 
 import fileUpload from "express-fileupload";
 
+import authGoogleRoutes from "./routers/authGoogle_routes.js";
+
 const app = express()
 dotenv.config()
 
@@ -34,7 +36,8 @@ app.get('/', (req, res) => res.send("Server on"))
 //  Rutas principales de la API
 // -------------------------------
 
-// Todo lo de carpinteros va aquí:
+// Rutas de autenticación con Google
+app.use("/api/auth", authGoogleRoutes);
 
 // Rutas de carpinteros
 app.use('/api/carpintero', routerCarpinteros)
