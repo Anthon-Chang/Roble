@@ -72,6 +72,28 @@ const registrarProyecto = async (req, res) => {
     }
 }
 
+// =====================================================
+// LISTAR PROYECTOS ACTIVOS DEL CARPINTERO
+// =====================================================
+const listarProyectos = async (req, res) => {
+    try {
+        const proyectos = await Proyecto.find({
+            estadoProyecto: true,
+            carpintero: req.carpinteroHeader._id
+        })
+        .select("-entrega -createdAt -updatedAt -__v")
+        .populate("carpintero", "_id nombre apellido")
+
+        res.status(200).json(proyectos)
+
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({ msg: `❌ Error en el servidor - ${error}` })
+    }
+}
+
+
 export {
     registrarProyecto,
+    listarProyectos
 }
