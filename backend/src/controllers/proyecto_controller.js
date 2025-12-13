@@ -27,8 +27,7 @@ const registrarProyecto = async (req, res) => {
         const nuevoProyecto = new Proyecto({
             ...req.body,
             passwordCliente: await Proyecto.prototype.encryptPassword(passwordFinal),
-            //carpintero: req.carpinteroHeader._id
-            carpintero: null
+            carpintero: req.carpinteroHeader._id   
         })
 
         // =============================

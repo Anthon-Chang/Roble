@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken"
 import carpintero from "../models/carpintero.js"
+import Proyecto from "../models/Proyecto.js"
 
 // =============================
 // CREAR TOKEN
@@ -26,6 +27,12 @@ const verificarTokenJWT = async (req, res, next) => {
                 return res.status(401).json({ msg: "Usuario no encontrado" })
             }
             req.carpinteroHeader = carpinteroBDD
+            next()
+        }
+        else{
+            const proyectoBDD = await Proyecto.findById(id).lean().select("-password")
+            if (!proyectoBDD) return res.status(401).json({ msg: "Usuario no encontrado" })
+            req.proyectoHeader = proyectoBDD
             next()
         }
 } catch (error) {
