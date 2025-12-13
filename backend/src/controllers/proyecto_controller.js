@@ -2,6 +2,8 @@ import Proyecto from "../models/Proyecto.js"
 import { sendMailToOwner } from "../helpers/sendMail.js"
 import { subirBase64Cloudinary, subirImagenCloudinary } from "../helpers/uploadCloudinary.js"
 import mongoose from "mongoose"
+import cloudinary from "cloudinary"
+import fs from "fs-extra"
 
 // =====================================================
 // REGISTRAR PROYECTO
@@ -163,9 +165,69 @@ const eliminarProyecto = async (req, res) => {
     }
 }
 
+// =====================================================
+// ACTUALIZAR PROYECTO
+// =====================================================
+const actualizarProyecto = async (req, res) => {
+    try {
+        const { id } = req.params
+
+        // Validaciones
+        if (Object.values(req.body).includes("")) {
+            return res.status(400).json({ msg: "Debes llenar todos los campos" })
+        }
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(404).json({ msg: `No existe el proyecto ${id}` })
+        }
+
+        const proyecto = await Proyecto.findById(id)
+
+        if (!proyecto) {
+            return res.status(404).json({ msg: "Proyecto no encontrado" })
+        }
+
+        // Validar pertenencia
+        if (proyecto.carpintero.toString() !== req.carpinteroHeader._id.toString()) {
+            return res.status(403).json({ msg: "Acción no permitida" })
+        }
+
+        // =============================
+        // Actualizar imagen física
+        // =============================
+        if (req.files?.imagenProyecto) {
+
+            // Eliminar imagen anterior
+            if (proyecto.imagenProyectoID) {
+                await cloudinary.uploader.destroy(proyecto.imagenProyectoID)
+            }
+
+            // Subir nueva imagen
+            const cloudiResponse = await cloudinary.uploader.upload(
+                req.files.imagenProyecto.tempFilePath,
+                { folder: "Proyectos" }
+            )
+
+            req.body.imagenProyecto = cloudiResponse.secure_url
+            req.body.imagenProyectoID = cloudiResponse.public_id
+
+            await fs.unlink(req.files.imagenProyecto.tempFilePath)
+        }
+
+        await Proyecto.findByIdAndUpdate(id, req.body, { new: true })
+
+        res.status(200).json({ msg: "Proyecto actualizado correctamente" })
+
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({ msg: `❌ Error en el servidor - ${error}` })
+    }
+}
+
 export {
     registrarProyecto,
     listarProyectos,
     detalleProyecto,
-    eliminarProyecto
+    eliminarProyecto,
+    actualizarProyecto
 }
