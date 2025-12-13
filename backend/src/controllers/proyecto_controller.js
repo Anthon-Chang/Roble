@@ -127,8 +127,45 @@ const detalleProyecto = async (req, res) => {
     }
 }
 
+// =====================================================
+// ELIMINAR (LÓGICO) PROYECTO
+// =====================================================
+const eliminarProyecto = async (req, res) => {
+    try {
+        const { id } = req.params
+
+        // Validar ObjectId
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(404).json({ msg: `No existe el proyecto ${id}` })
+        }
+
+        const proyecto = await Proyecto.findById(id)
+
+        // Proyecto no existe
+        if (!proyecto) {
+            return res.status(404).json({ msg: "Proyecto no encontrado" })
+        }
+
+        // Validar pertenencia al carpintero
+        if (proyecto.carpintero.toString() !== req.carpinteroHeader._id.toString()) {
+            return res.status(403).json({ msg: "Acción no permitida" })
+        }
+
+        // Eliminado lógico
+        proyecto.estadoProyecto = false
+        await proyecto.save()
+
+        res.status(200).json({ msg: "Fecha de entrega registrado exitosamente" })
+
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({ msg: `❌ Error en el servidor - ${error}` })
+    }
+}
+
 export {
     registrarProyecto,
     listarProyectos,
-    detalleProyecto
+    detalleProyecto,
+    eliminarProyecto
 }
