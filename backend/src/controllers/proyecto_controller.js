@@ -1,6 +1,7 @@
 import Proyecto from "../models/Proyecto.js"
 import { sendMailToOwner } from "../helpers/sendMail.js"
 import { subirBase64Cloudinary, subirImagenCloudinary } from "../helpers/uploadCloudinary.js"
+import mongoose from "mongoose"
 
 // =====================================================
 // REGISTRAR PROYECTO
@@ -92,8 +93,42 @@ const listarProyectos = async (req, res) => {
     }
 }
 
+// =====================================================
+// DETALLE DE UN PROYECTO
+// =====================================================
+const detalleProyecto = async (req, res) => {
+    try {
+        const { id } = req.params
+
+        // Validar ObjectId
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(404).json({ msg: `No existe el proyecto con id ${id}` })
+        }
+
+        const proyecto = await Proyecto.findById(id)
+            .select("-createdAt -updatedAt -__v")
+            .populate("carpintero", "_id nombre apellido")
+
+        // Proyecto no existe
+        if (!proyecto) {
+            return res.status(404).json({ msg: "Proyecto no encontrado" })
+        }
+
+        // Validar pertenencia al carpintero
+        if (proyecto.carpintero._id.toString() !== req.carpinteroHeader._id.toString()) {
+            return res.status(403).json({ msg: "Acción no permitida" })
+        }
+
+        res.status(200).json(proyecto)
+
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({ msg: `❌ Error en el servidor - ${error}` })
+    }
+}
 
 export {
     registrarProyecto,
-    listarProyectos
+    listarProyectos,
+    detalleProyecto
 }
