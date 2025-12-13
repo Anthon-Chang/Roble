@@ -50,9 +50,8 @@ const proyectoSchema = new Schema({
         trim:true
     },
     estadoProyecto: {
-        type: String,
-        enum: ["pendiente", "en_progreso", "completado"],
-        default: "pendiente"
+    type: Boolean,
+    default: true
     },
     fechaEntrega: {
         type: Date,
