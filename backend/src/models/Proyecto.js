@@ -45,6 +45,10 @@ const proyectoSchema = new Schema({
     type: String,
     default: null
     },
+    imagenProyectoIA:{
+        type:String,
+        trim:true
+    },
     estadoProyecto: {
         type: String,
         enum: ["pendiente", "en_progreso", "completado"],
