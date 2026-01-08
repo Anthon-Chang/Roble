@@ -11,6 +11,12 @@ import fs from "fs-extra"
 const registrarProyecto = async (req, res) => {
     try {
 
+        console.log('--- registrarProyecto request ---')
+        console.log('headers.authorization=', req.headers.authorization)
+        console.log('body keys=', Object.keys(req.body || {}))
+        try { console.log('body sample=', JSON.stringify(req.body).slice(0,200)) } catch(e) {}
+        console.log('files keys=', Object.keys(req.files || {}))
+
         // Validar campos vacíos
         if (Object.values(req.body).includes(""))
             return res.status(400).json({ msg: "Debes llenar todos los campos" })
