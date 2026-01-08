@@ -79,7 +79,8 @@ proyectoSchema.methods.encryptPassword = async function(password){
 
 // Método para verificar si el password es el mismo de la BDD
 proyectoSchema.methods.matchPassword = async function(password){
-    return bcrypt.compare(password, this.passwordPropietario)
+    return await bcrypt.compare(password, this.passwordCliente)
 }
+
 
 export default model("Proyecto", proyectoSchema);

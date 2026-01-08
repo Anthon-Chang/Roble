@@ -4,6 +4,7 @@ import { subirBase64Cloudinary, subirImagenCloudinary } from "../helpers/uploadC
 import mongoose from "mongoose"
 import cloudinary from "cloudinary"
 import fs from "fs-extra"
+import { crearTokenJWT } from "../middlewares/JWT.js"
 
 // =====================================================
 // REGISTRAR PROYECTO
@@ -224,10 +225,93 @@ const actualizarProyecto = async (req, res) => {
     }
 }
 
+// =====================================================
+// LOGIN CLIENTE 
+// =====================================================
+const loginClienteProyecto = async (req, res) => {
+    try {
+        const { emailCliente, passwordCliente } = req.body
+
+        if (!emailCliente || !passwordCliente) {
+            return res.status(400).json({ msg: "Debes llenar todos los campos" })
+        }
+
+        const proyectoBDD = await Proyecto.findOne({ emailCliente })
+        if (!proyectoBDD) {
+            return res.status(404).json({ msg: "El cliente no se encuentra registrado" })
+        }
+
+        if (!proyectoBDD.passwordCliente) {
+            return res.status(500).json({ msg: "Error interno: password no definido" })
+        }
+
+        const verificarPassword = await proyectoBDD.matchPassword(passwordCliente)
+        if (!verificarPassword) {
+            return res.status(401).json({ msg: "El password no es correcto" })
+        }
+
+        const token = crearTokenJWT(proyectoBDD._id, "cliente")
+
+        res.status(200).json({
+            token,
+            rol: "cliente",
+            _id: proyectoBDD._id
+        })
+
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({ msg: `❌ Error en el servidor - ${error.message}` })
+    }
+}
+
+// =====================================================
+// PERFIL CLIENTE
+// =====================================================
+const perfilClienteProyecto = (req, res) => {
+    try {
+        const {
+            _id,
+            nombreCliente,
+            cedulaCliente,
+            emailCliente,
+            celularCliente,
+            nombreProyecto,
+            descripcionProyecto,
+            imagenProyecto,
+            imagenProyectoIA,
+            estadoProyecto,
+            fechaEntrega,
+            precioProyecto
+        } = req.proyectoHeader
+
+        res.status(200).json({
+            _id,
+            nombreCliente,
+            cedulaCliente,
+            emailCliente,
+            celularCliente,
+            nombreProyecto,
+            descripcionProyecto,
+            imagenProyecto,
+            imagenProyectoIA,
+            estadoProyecto,
+            fechaEntrega,
+            precioProyecto
+        })
+
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({ msg: `❌ Error en el servidor - ${error}` })
+    }
+}
+
+
 export {
     registrarProyecto,
     listarProyectos,
     detalleProyecto,
     eliminarProyecto,
-    actualizarProyecto
+    actualizarProyecto,
+    loginClienteProyecto,
+    perfilClienteProyecto
 }
