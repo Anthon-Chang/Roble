@@ -31,7 +31,7 @@ const Table = () => {
   const [loading, setLoading] = useState(true); // Para manejar estado de carga
   const [error, setError] = useState(null); // Para manejar errores
 
-  const listclientes = async () => { 
+  const listProyectos = async () => { 
     try {
       const url = `${import.meta.env.VITE_BACKEND_URL}/api/proyecto/listar`;
       const storedUser = JSON.parse(localStorage.getItem("auth-token"));
@@ -64,7 +64,7 @@ const Table = () => {
   };
 
   useEffect(() => {
-    listclientes();
+    listProyectos();
   }, []);
 
   if (loading) {
