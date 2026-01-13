@@ -18,9 +18,25 @@ const registrarProyecto = async (req, res) => {
         try { console.log('body sample=', JSON.stringify(req.body).slice(0,200)) } catch(e) {}
         console.log('files keys=', Object.keys(req.files || {}))
 
-        // Validar campos vacíos
-        if (Object.values(req.body).includes(""))
-            return res.status(400).json({ msg: "Debes llenar todos los campos" })
+        // Validar campos requeridos (evitar forzar que campos opcionales estén presentes)
+        const requiredFields = [
+            "nombreCliente",
+            "cedulaCliente",
+            "emailCliente",
+            "celularCliente",
+            "nombreProyecto",
+            "descripcionProyecto",
+            "fechaEntrega",
+            "precioProyecto",
+        ]
+
+        for (const field of requiredFields) {
+            if (req.body[field] === undefined || req.body[field] === "") {
+                console.log(`Missing field detected: ${field}`, { value: req.body[field] })
+                console.log('Full req.body sample:', JSON.stringify(req.body).slice(0,400))
+                return res.status(400).json({ msg: `Debes llenar el campo ${field}` })
+            }
+        }
 
         const { emailCliente } = req.body
 
@@ -67,9 +83,12 @@ const registrarProyecto = async (req, res) => {
         await nuevoProyecto.save()
 
         // =============================
-        // Enviar correo al cliente
+        // Enviar correo al cliente (no bloquear la respuesta)
         // =============================
-        await sendMailToOwner(emailCliente, passwordFinal)
+        // Disparar el envío de correo de forma asíncrona sin await
+        sendMailToOwner(emailCliente, passwordFinal)
+            .then(() => console.log('Correo de credenciales enviado (async)'))
+            .catch(err => console.error('Error enviando correo (async):', err))
 
         res.status(201).json({
             msg: "Proyecto registrado correctamente y correo enviado al cliente",
@@ -179,9 +198,23 @@ const actualizarProyecto = async (req, res) => {
     try {
         const { id } = req.params
 
-        // Validaciones
-        if (Object.values(req.body).includes("")) {
-            return res.status(400).json({ msg: "Debes llenar todos los campos" })
+        // Validaciones: comprobar sólo los campos requeridos para actualizar
+        const requiredUpdateFields = [
+            "nombreCliente",
+            "cedulaCliente",
+            "emailCliente",
+            "celularCliente",
+            "nombreProyecto",
+            "descripcionProyecto",
+            "fechaEntrega",
+            "precioProyecto",
+        ]
+
+        for (const field of requiredUpdateFields) {
+            if (req.body[field] === undefined || req.body[field] === "") {
+                console.log(`Missing update field: ${field}`, { value: req.body[field] })
+                return res.status(400).json({ msg: `Debes llenar el campo ${field}` })
+            }
         }
 
         if (!mongoose.Types.ObjectId.isValid(id)) {
