@@ -112,7 +112,7 @@ if (dataForm.imageOption === "ia" && dataForm.imagenProyectoIA) {
         const storedUser = JSON.parse(localStorage.getItem("auth-token"))
         const headers = { Authorization: `Bearer ${storedUser?.state?.token}` }
 
-        const response = await fetchDataBackend(url, formData, "POST", headers)
+        const response = await fetchDataBackend(url, formData, "POST", headers, true)
         if (response) {
             setTimeout(() => navigate("/dashboard/list"), 1400)
         }

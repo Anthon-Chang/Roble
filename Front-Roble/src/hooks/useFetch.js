@@ -1,10 +1,18 @@
 import axios from "axios"
 import { toast } from "react-toastify"
 
-
 export function useFetch() {
-  const fetchDataBackend = async (url, data = null, method = "GET", headers = {}) => {
-    const loadingToast = toast.loading("Procesando solicitud...")
+  const fetchDataBackend = async (
+    url,
+    data = null,
+    method = "GET",
+    headers = {},
+    showToast = false   // 👈 NUEVO
+  ) => {
+
+    const loadingToast = showToast
+      ? toast.loading("Procesando solicitud...")
+      : null
 
     try {
       const isFormData = typeof FormData !== "undefined" && data instanceof FormData
@@ -20,17 +28,19 @@ export function useFetch() {
         data
       })
 
-      toast.dismiss(loadingToast)
-
-      // 👇 aquí estaba el bug
-      toast.success(response?.data?.message || "Operación exitosa")
+      if (showToast) {
+        toast.dismiss(loadingToast)
+        toast.success(response?.data?.message || "Operación exitosa")
+      }
 
       return response.data
 
     } catch (error) {
-      toast.dismiss(loadingToast)
+      if (showToast) {
+        toast.dismiss(loadingToast)
+        toast.error(error.response?.data?.message || "Error en la solicitud")
+      }
       console.error(error)
-      toast.error(error.response?.data?.message || "Error en la solicitud")
       return null
     }
   }
