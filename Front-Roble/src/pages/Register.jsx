@@ -16,7 +16,7 @@ export const Register = () => {
     const { register, handleSubmit, formState: { errors } } = useForm()
     
     const registerUser = async (dataForm) => {
-        const url = `${import.meta.env.VITE_BACKEND_URL}/carpintero/registro`
+        const url = `${import.meta.env.VITE_BACKEND_URL}/api/carpintero/registro`
         await fetchDataBackend(url, dataForm, "POST")
     }
 
