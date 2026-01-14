@@ -18,16 +18,16 @@ const Table = () => {
                 } 
             }
             const data ={
-                salidaMascota:new Date().toString()
+                salidaProyecto:new Date().toString()
             }
             await fetchDataBackend(url, data, "DELETE", options.headers,true)
-            setPatients((prevPatients) => prevPatients.filter(patient => patient._id !== id))
+            setProyecto((prevProyecto) => prevProyecto.filter(proyecto => proyecto._id !== id))
         }
     }
 
   const navigate = useNavigate()
   const fetchDataBackend = useFetch();
-  const [patients, setPatients] = useState([]);
+  const [proyecto, setProyecto] = useState([]);
   const [loading, setLoading] = useState(true); // Para manejar estado de carga
   const [error, setError] = useState(null); // Para manejar errores
 
@@ -51,9 +51,9 @@ const Table = () => {
 
       if (!response || !Array.isArray(response)) {
         setError("No se pudo obtener la lista de clientes.");
-        setPatients([]);
+        setProyecto([]);
       } else {
-        setPatients(response);
+        setProyecto(response);
       }
     } catch (err) {
       console.error(err);
@@ -83,7 +83,7 @@ const Table = () => {
     );
   }
 
-  if (patients.length === 0) {
+  if (proyecto.length === 0) {
     return (
       <div className="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400" role="alert">
         <span className="font-medium">No existen registros</span>
@@ -108,7 +108,7 @@ const Table = () => {
 
       {/* Cuerpo de la tabla */}
       <tbody>
-        {patients.map((proyecto, index) => (
+        {proyecto.map((proyecto, index) => (
           <tr className="hover:bg-gray-300 text-center" key={proyecto._id}>
               <td>{index + 1}</td>
               <td className="px-2 py-1 text-left">{proyecto.nombreProyecto}</td>
