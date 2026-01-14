@@ -38,7 +38,7 @@ const Login = () => {
     {/* Contenido encima */}
     <ToastContainer />
 
-        <div class="w-11/12 sm:w-150 min-h-[700px] bg-white/80 dark:bg-[#1e2939]/80 p-8 rounded-xl shadow-xl backdrop-blur flex flex-col items-left justify-center">
+        <div className="w-11/12 sm:w-150 min-h-[700px] bg-white/80 dark:bg-[#1e2939]/80 p-8 rounded-xl shadow-xl backdrop-blur flex flex-col items-left justify-center">
 
 
 

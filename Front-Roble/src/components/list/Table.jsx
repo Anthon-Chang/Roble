@@ -6,7 +6,7 @@ import { ToastContainer } from "react-toastify";
 
 const Table = () => {
 
-  const deleteCliente = async(id) => {
+  const deleteProyecto = async(id) => {
         const confirmDelete = confirm("Vas registrar la salida del paciente, ¿Estás seguro?")
         if(confirmDelete){
             const url = `${import.meta.env.VITE_BACKEND_URL}/api/proyecto/eliminar/${id}`
@@ -15,12 +15,12 @@ const Table = () => {
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${storedUser.state.token}`,
-                }
+                } 
             }
             const data ={
                 salidaMascota:new Date().toString()
             }
-            await fetchDataBackend(url, data, "DELETE", options.headers)
+            await fetchDataBackend(url, data, "DELETE", options.headers,true)
             setPatients((prevPatients) => prevPatients.filter(patient => patient._id !== id))
         }
     }
@@ -31,7 +31,7 @@ const Table = () => {
   const [loading, setLoading] = useState(true); // Para manejar estado de carga
   const [error, setError] = useState(null); // Para manejar errores
 
-  const listclientes = async () => { 
+  const listProyectos = async () => { 
     try {
       const url = `${import.meta.env.VITE_BACKEND_URL}/api/proyecto/listar`;
       const storedUser = JSON.parse(localStorage.getItem("auth-token"));
@@ -64,13 +64,13 @@ const Table = () => {
   };
 
   useEffect(() => {
-    listclientes();
+    listProyectos();
   }, []);
 
   if (loading) {
     return (
       <div className="p-4 mb-4 text-sm text-gray-800 rounded-lg bg-gray-50 dark:bg-gray-800 dark:text-gray-300">
-        Cargando clientes...
+        Cargando proyectos...
       </div>
     );
   }
@@ -92,8 +92,9 @@ const Table = () => {
   }
 
   return (
+    <>
+    <ToastContainer/>
     <table className="w-full mt-5 table-auto shadow-lg bg-white">
-      <ToastContainer/>
       {/* Encabezado */}
       <thead className="bg-gray-800 text-slate-400">
         <tr>
@@ -107,24 +108,24 @@ const Table = () => {
 
       {/* Cuerpo de la tabla */}
       <tbody>
-        {patients.map((cliente, index) => (
-          <tr className="hover:bg-gray-300 text-center" key={cliente._id}>
+        {patients.map((proyecto, index) => (
+          <tr className="hover:bg-gray-300 text-center" key={proyecto._id}>
               <td>{index + 1}</td>
-              <td className="px-2 py-1 text-left">{cliente.nombreProyecto}</td>
-              <td className="px-2 py-1">{cliente.nombreCliente}</td>
-              <td className="px-2 py-1">{cliente.emailCliente}</td>
-              <td className="px-2 py-1">{cliente.celularCliente}</td>
-              <td className="px-2 py-1">{cliente.precioProyecto ?? 0}</td>
-              <td className="px-2 py-1">{cliente.fechaEntrega ? new Date(cliente.fechaEntrega).toLocaleDateString() : "-"}</td>
+              <td className="px-2 py-1 text-left">{proyecto.nombreProyecto}</td>
+              <td className="px-2 py-1">{proyecto.nombreCliente}</td>
+              <td className="px-2 py-1">{proyecto.emailCliente}</td>
+              <td className="px-2 py-1">{proyecto.celularCliente}</td>
+              <td className="px-2 py-1">{proyecto.precioProyecto ?? 0}</td>
+              <td className="px-2 py-1">{proyecto.fechaEntrega ? new Date(proyecto.fechaEntrega).toLocaleDateString() : "-"}</td>
               <td>
                 <span
                   className={`text-xs font-medium mr-2 px-2.5 py-0.5 rounded ${
-                    cliente.estadoProyecto
+                    proyecto.estadoProyecto
                       ? "bg-blue-100 text-green-500 dark:bg-blue-900 dark:text-blue-300"
                       : "bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400"
                   }`}
                 >
-                  {cliente.estadoProyecto ? "Activo" : "Inactivo"}
+                  {proyecto.estadoProyecto ? "Activo" : "Inactivo"}
                 </span>
               </td>
             <td className="py-2 text-center">
@@ -135,18 +136,19 @@ const Table = () => {
               <MdInfo
                 title="Más información"
                 className="h-7 w-7 text-slate-800 cursor-pointer inline-block mr-2 hover:text-green-600"
-                onClick={() => navigate(`/dashboard/details/${cliente._id}`)}
+                onClick={() => navigate(`/dashboard/details/${proyecto._id}`)}
               />
               <MdDeleteForever
                 title="Eliminar"
                 className="h-7 w-7 text-red-900 cursor-pointer inline-block hover:text-red-600"
-                onClick={()=>{deleteCliente(cliente._id)}}
+                onClick={()=>{deleteProyecto(proyecto._id)}}
               />
             </td>
           </tr>
         ))}
       </tbody>
     </table>
+    </>
   );
 };
 
