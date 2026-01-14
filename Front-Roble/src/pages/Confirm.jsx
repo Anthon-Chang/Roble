@@ -12,7 +12,7 @@ export const Confirm = () => {
     const { token } = useParams()
     
     const verifyToken = async()=>{
-        const url = `${import.meta.env.VITE_BACKEND_URL}/carpintero/confirmar/${token}`
+        const url = `${import.meta.env.VITE_BACKEND_URL}/api/carpintero/confirmar/${token}`
         await fetchDataBackend(url)
     }
 

@@ -15,7 +15,7 @@ const Reset = () => {
     const { register, handleSubmit, formState: { errors } } = useForm()
 
     const changePassword = async (dataForm) => {
-        const url = `${import.meta.env.VITE_BACKEND_URL}/carpintero/nuevopassword/${token}`
+        const url = `${import.meta.env.VITE_BACKEND_URL}/api/carpintero/nuevopassword/${token}`
         await fetchDataBackend(url, dataForm,'POST')
         setTimeout(() => {
             if (dataForm.password === dataForm.confirmpassword) {
@@ -27,7 +27,7 @@ const Reset = () => {
 
     useEffect(() => {
         const verifyToken = async()=>{
-            const url = `${import.meta.env.VITE_BACKEND_URL}/carpintero/recuperarpassword/${token}`
+            const url = `${import.meta.env.VITE_BACKEND_URL}/api/carpintero/recuperarpassword/${token}`
             await fetchDataBackend(url,'GET')
             setTokenBack(true)
         }

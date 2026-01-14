@@ -10,7 +10,7 @@ export const Forgot = () => {
     const fetchDataBackend = useFetch()
 
     const sendMail = async (dataForm) => {
-        const url = `${import.meta.env.VITE_BACKEND_URL}/carpintero/recuperarpassword`
+        const url = `${import.meta.env.VITE_BACKEND_URL}/api/carpintero/recuperarpassword`
         await fetchDataBackend(url, dataForm,'POST')
     }
 
