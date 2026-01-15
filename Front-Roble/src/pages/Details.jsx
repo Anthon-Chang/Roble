@@ -54,7 +54,7 @@ const Details = () => {
                             <li className="text-md text-gray-00 mt-4 font-bold text-xl">Datos del cliente</li>
 
 
-                            {/* Datos del propietario */}
+                            {/* Datos del cliente */}
                             <ul className="pl-5">
 
                                 <li className="text-md mt-2">
@@ -80,7 +80,7 @@ const Details = () => {
                             <li className="text-md text-gray-00 mt-4 font-bold text-xl">Datos del proyecto</li>
 
 
-                            {/* Datos del paciente */}
+                            {/* Datos del proyecto */}
                             <ul className="pl-5">
 
                                 <li className="text-md mt-2">
@@ -115,6 +115,7 @@ const Details = () => {
                     
                     {/* Imagen lateral */}
                     <div>
+                        {/* <pre>{JSON.stringify(proyecto, null, 2)}</pre> */}
                         <img src={proyecto?.imagenProyectoIA || proyecto?.imagenProyecto || proyecto?.imagen} alt="proyecto" className='h-80 w-80 rounded-full'/>
                     </div>
                 </div>

@@ -184,9 +184,20 @@ if (dataForm.imageOption === "ia" && dataForm.imagenProyectoIA) {
                 {selectedOption === "upload" && (
                     <div className="mt-5">
                         <label className="mb-2 block text-sm font-semibold">Subir Imagen</label>
-                        <input type="file" accept="image/*" className="block w-full rounded-md border border-gray-300 py-1 px-2 text-gray-500 mb-5" {...register("imagenProyecto")} />
+
+                        <input
+                        type="file"
+                        accept="image/*"
+                        className="block w-full rounded-md border border-gray-300 py-1 px-2 text-gray-500 mb-5"
+                        onChange={(e) => {
+                            const file = e.target.files[0]
+                            if (file) {
+                            setValue("imagenProyecto", e.target.files)   // 👈 esto es lo que faltaba
+                            }
+                        }}
+                        />  
                     </div>
-                )}
+                    )}
 
                 {selectedOption === "3d" && (
                     <div className="mt-5 space-y-4">

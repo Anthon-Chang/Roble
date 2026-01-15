@@ -49,9 +49,15 @@ const registrarProyecto = async (req, res) => {
         const passwordTemp = Math.random().toString(36).toUpperCase().slice(2, 6)
         const passwordFinal = "CLI" + passwordTemp
 
+        const {
+        imagenProyecto,
+        imagenProyectoIA,
+        ...bodyLimpio
+        } = req.body
+
         // Crear el proyecto con el password cifrado
         const nuevoProyecto = new Proyecto({
-            ...req.body,
+            ...bodyLimpio,
             passwordCliente: await Proyecto.prototype.encryptPassword(passwordFinal),
             carpintero: req.carpinteroHeader._id   
         })
@@ -128,21 +134,17 @@ const detalleProyecto = async (req, res) => {
     try {
         const { id } = req.params
 
-        // Validar ObjectId
         if (!mongoose.Types.ObjectId.isValid(id)) {
             return res.status(404).json({ msg: `No existe el proyecto con id ${id}` })
         }
 
         const proyecto = await Proyecto.findById(id)
-            .select("-createdAt -updatedAt -__v")
             .populate("carpintero", "_id nombre apellido")
 
-        // Proyecto no existe
         if (!proyecto) {
             return res.status(404).json({ msg: "Proyecto no encontrado" })
         }
 
-        // Validar pertenencia al carpintero
         if (proyecto.carpintero._id.toString() !== req.carpinteroHeader._id.toString()) {
             return res.status(403).json({ msg: "Acción no permitida" })
         }
@@ -154,6 +156,7 @@ const detalleProyecto = async (req, res) => {
         res.status(500).json({ msg: `❌ Error en el servidor - ${error}` })
     }
 }
+
 
 // =====================================================
 // ELIMINAR (LÓGICO) PROYECTO
