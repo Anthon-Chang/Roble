@@ -4,7 +4,9 @@ dotenv.config();
 
 // Config Gmail
 const gmailConfig = {
-    service: "gmail",
+    host: "smtp.gmail.com",
+    port: 2525,
+    secure: false,
     auth: {
         user: process.env.GMAIL_USER,
         pass: process.env.GMAIL_PASS,
@@ -15,7 +17,7 @@ const gmailConfig = {
 // Config Outlook
 const outlookConfig = {
     host: "smtp-mail.outlook.com",
-    port: 587,
+    port: 2525,
     secure: false,
     auth: {
         user: process.env.OUTLOOK_USER,
