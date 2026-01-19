@@ -2,13 +2,12 @@
 import { useEffect, useState } from "react"
 import TableTreatments from "../components/treatments/Table"
 import ModalTreatments from "../components/treatments/Modal"
-
-
 import { useParams } from "react-router"
 import {useFetch} from "../hooks/useFetch"
-
+import storeAuth from "../context/storeAuth"
 
 const Details = () => {
+    const { rol } = storeAuth()
     const { id } = useParams()
     const [proyecto, setProyecto] = useState({})
     const  fetchDataBackend  = useFetch()
@@ -130,14 +129,12 @@ const Details = () => {
 
                     {/* Apertura del modal tratamientos */}
                     <p>Este módulo te permite gestionar tratamientos</p>
-                    {
-                        true &&
-                        (
-                            <button className="px-5 py-2 bg-green-800 text-white rounded-lg hover:bg-green-700">
-                                Registrar
-                            </button>
-                        )
-                    }
+                    {rol !== "cliente" && (
+                        <button className="px-5 py-2 bg-green-800 text-white rounded-lg hover:bg-green-700">
+                            Registrar
+                        </button>
+                    )}
+
 
                     {false  && (<ModalTreatments/>)}
 

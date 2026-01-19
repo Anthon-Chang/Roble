@@ -3,9 +3,11 @@ import { useFetch } from "../../hooks/useFetch";
 import { useEffect, useState } from "react";
 import { useNavigate } from 'react-router';
 import { ToastContainer } from "react-toastify";
-
+import storeAuth from "../../context/storeAuth"
 const Table = () => {
 
+  const { rol } = storeAuth()
+  
   const deleteProyecto = async(id) => {
         const confirmDelete = confirm("Vas registrar la salida del paciente, ¿Estás seguro?")
         if(confirmDelete){
@@ -129,21 +131,26 @@ const Table = () => {
                 </span>
               </td>
             <td className="py-2 text-center">
-              <MdPublishedWithChanges
-                title="Actualizar"
-                className="h-7 w-7 text-slate-800 cursor-pointer inline-block mr-2 hover:text-blue-600"
-                onClick={() => navigate(`/dashboard/update/${proyecto._id}`)}
-              />
               <MdInfo
                 title="Más información"
                 className="h-7 w-7 text-slate-800 cursor-pointer inline-block mr-2 hover:text-green-600"
                 onClick={() => navigate(`/dashboard/details/${proyecto._id}`)}
               />
-              <MdDeleteForever
-                title="Eliminar"
-                className="h-7 w-7 text-red-900 cursor-pointer inline-block hover:text-red-600"
-                onClick={()=>{deleteProyecto(proyecto._id)}}
-              />
+
+              {rol !== "cliente" && (
+                <>
+                  <MdPublishedWithChanges
+                    title="Actualizar"
+                    className="h-7 w-7 text-slate-800 cursor-pointer inline-block mr-2 hover:text-blue-600"
+                    onClick={() => navigate(`/dashboard/update/${proyecto._id}`)}
+                  />
+                  <MdDeleteForever
+                    title="Eliminar"
+                    className="h-7 w-7 text-red-900 cursor-pointer inline-block hover:text-red-600"
+                    onClick={() => deleteProyecto(proyecto._id)}
+                  />
+                </>
+              )}
             </td>
           </tr>
         ))}

@@ -141,39 +141,48 @@ const listarProyectos = async (req, res) => {
 // =====================================================
 const detalleProyecto = async (req, res) => {
     try {
-        const { id } = req.params
+        const { id } = req.params;
 
         if (!mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(404).json({ msg: `No existe el proyecto con id ${id}` })
+            return res.status(404).json({ msg: `No existe el proyecto con id ${id}` });
         }
 
         const proyecto = await Proyecto.findById(id)
-            .populate("carpintero", "_id nombre apellido")
+            .populate("carpintero", "_id nombre apellido");
 
         if (!proyecto) {
-            return res.status(404).json({ msg: "Proyecto no encontrado" })
+            return res.status(404).json({ msg: "Proyecto no encontrado" });
         }
 
-        if (proyecto.carpintero._id.toString() !== req.carpinteroHeader._id.toString()) {
-            return res.status(403).json({ msg: "Acción no permitida" })
+        // 🔹 Validar acceso según rol
+        if (req.carpinteroHeader) {
+            // Solo los carpinteros tienen carpinteroHeader
+            if (proyecto.carpintero._id.toString() !== req.carpinteroHeader._id.toString()) {
+                return res.status(403).json({ msg: "Acción no permitida" });
+            }
+        } else if (req.proyectoHeader) {
+            // Si es un cliente, opcional: validar que el proyecto sea suyo
+            if (proyecto._id.toString() !== req.proyectoHeader._id.toString()) {
+                return res.status(403).json({ msg: "Acción no permitida" });
+            }
         }
 
         // Buscar estados del proyecto
         const estados = await Estado.find()
             .where("proyecto")
             .equals(id)
-            .select("-createdAt -updatedAt -__v")
+            .select("-createdAt -updatedAt -__v");
 
-        // Asignar estados al proyecto
-        proyecto.estados = estados
+        proyecto.estados = estados;
 
-        res.status(200).json(proyecto)
+        res.status(200).json(proyecto);
 
     } catch (error) {
-        console.error(error)
-        res.status(500).json({ msg: `❌ Error en el servidor - ${error}` })
+        console.error(error);
+        res.status(500).json({ msg: `❌ Error en el servidor - ${error}` });
     }
-}
+};
+
 
 
 // =====================================================
