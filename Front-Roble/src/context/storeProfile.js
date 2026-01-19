@@ -19,13 +19,28 @@ const storeProfile = create((set) => ({
     clearUser: () => set({ user: null }),
     profile: async () => {
         try {
-            const url = `${import.meta.env.VITE_BACKEND_URL}/api/carpintero/perfil`
-            const respuesta = await axios.get(url, getAuthHeaders())
-            set({ user: respuesta.data })
-        } catch (error) {
-            console.error(error)
-        }
+    const storedUser = JSON.parse(localStorage.getItem("auth-token"))
+    const rol = storedUser?.state?.rol
+
+    const endpoint =
+    rol === "carpintero"
+        ? "api/carpintero/perfil"
+        : "api/proyecto/perfil"
+
+    const url = `${import.meta.env.VITE_BACKEND_URL}/${endpoint}`
+    const respuesta = await axios.get(url, getAuthHeaders())
+
+    set({
+    user: {
+        ...respuesta.data,
+        rol,
     },
+    })
+    } catch (error) {
+    console.error(error)
+    }
+},
+
 
     updateProfile:async(url, data)=>{
         try {

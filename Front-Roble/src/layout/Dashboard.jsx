@@ -41,7 +41,7 @@ const Dashboard = () => {
                     onClick={() => setMenuOpen(!menuOpen)}
                     ref={menuRef}
                 >
-                    <span className='text-md text-white font-semibold'>{user?.nombre}</span>
+                    <span className='text-md text-white font-semibold'>{user?.nombre || user?.nombreCliente}</span>
                     <span className='text-md text-white font-semibold'>{user?.apellido}</span>
                     
                     <img 
@@ -56,7 +56,7 @@ const Dashboard = () => {
                             <div className='flex items-center gap-3 px-3 py-2 border-b border-slate-500'>
                                 <img src={FP} alt="Usuario" className="w-20 h-20 rounded-full border-2 border-green-600"/>
                                 <div>
-                                    <p className={`${darkMode ? 'text-white' : 'text-slate-100'} font-semibold`}>{user?.nombre}</p>
+                                    <p className={`${darkMode ? 'text-white' : 'text-slate-100'} font-semibold`}>{user?.nombre || user?.nombreCliente} {user?.apellido}</p>
                                     <p className={`${darkMode ? 'text-gray-400' : 'text-slate-400'} text-sm`}>Rol - {user?.rol}</p>
                                 </div>
                             </div>
@@ -94,14 +94,12 @@ const Dashboard = () => {
                             </div>
 
                             <div>
-                                <li className='my-1'>
                                     <button
                                         onClick={() => clearToken()}
                                         className={`${darkMode ? 'text-white hover:bg-gray-700' : 'text-slate-100 hover:bg-gray-900'} w-full px-3 py-2 rounded-md text-center`}
                                     >
                                         Salir
-                                    </button>
-                                </li>
+                                    </button>                     
                             </div>
                         </div>
                     )}
