@@ -7,6 +7,7 @@ import planRoutes from "./routers/planRoutes.js";
 import furnitureRoutes from './routers/furniture_routes.js';
 import model3dRoutes from "./routers/model3d_routes.js";
 import routerProyectos from './routers/proyecto_routes.js';
+import routerEstado from './routers/estado_routes.js';
 
 import fileUpload from "express-fileupload";
 
@@ -93,6 +94,9 @@ app.use('/api/carpintero', routerCarpinteros)
 
 // Rutas de proyectos
 app.use("/api/proyecto", routerProyectos)
+
+// Rutas de estados
+app.use("/api/estado", routerEstado)
 
 // Rutas de planes
 app.use("/api/plans", planRoutes)

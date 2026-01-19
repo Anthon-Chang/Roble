@@ -5,6 +5,7 @@ import mongoose from "mongoose"
 import cloudinary from "cloudinary"
 import fs from "fs-extra"
 import { crearTokenJWT } from "../middlewares/JWT.js"
+import Estado from "../models/Estado.js"
 
 // =====================================================
 // REGISTRAR PROYECTO
@@ -27,7 +28,6 @@ const registrarProyecto = async (req, res) => {
             "nombreProyecto",
             "descripcionProyecto",
             "fechaEntrega",
-            "precioProyecto",
         ]
 
         for (const field of requiredFields) {
@@ -149,6 +149,15 @@ const detalleProyecto = async (req, res) => {
             return res.status(403).json({ msg: "Acción no permitida" })
         }
 
+        // Buscar estados del proyecto
+        const estados = await Estado.find()
+            .where("proyecto")
+            .equals(id)
+            .select("-createdAt -updatedAt -__v")
+
+        // Asignar estados al proyecto
+        proyecto.estados = estados
+
         res.status(200).json(proyecto)
 
     } catch (error) {
@@ -210,7 +219,6 @@ const actualizarProyecto = async (req, res) => {
             "nombreProyecto",
             "descripcionProyecto",
             "fechaEntrega",
-            "precioProyecto",
         ]
 
         for (const field of requiredUpdateFields) {
@@ -322,8 +330,7 @@ const perfilClienteProyecto = (req, res) => {
             imagenProyecto,
             imagenProyectoIA,
             estadoProyecto,
-            fechaEntrega,
-            precioProyecto
+            fechaEntrega
         } = req.proyectoHeader
 
         res.status(200).json({
@@ -337,8 +344,7 @@ const perfilClienteProyecto = (req, res) => {
             imagenProyecto,
             imagenProyectoIA,
             estadoProyecto,
-            fechaEntrega,
-            precioProyecto
+            fechaEntrega
         })
 
     } catch (error) {
