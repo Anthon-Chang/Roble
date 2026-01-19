@@ -112,20 +112,29 @@ const registrarProyecto = async (req, res) => {
 // =====================================================
 const listarProyectos = async (req, res) => {
     try {
-        const proyectos = await Proyecto.find({
-            estadoProyecto: true,
-            carpintero: req.carpinteroHeader._id
-        })
-        .select("-entrega -createdAt -updatedAt -__v")
-        .populate("carpintero", "_id nombre apellido")
+        const userId = req.userId;
+        const role = req.userRole;
 
-        res.status(200).json(proyectos)
+        let proyectos;
 
+        if (role === "carpintero") {
+            proyectos = await Proyecto.find({ estadoProyecto: true, carpintero: userId })
+                .select("-entrega -createdAt -updatedAt -__v")
+                .populate("carpintero", "_id nombre apellido");
+        } else {
+            // Cliente ve solo su proyecto
+            proyectos = await Proyecto.find({ _id: userId })
+                .select("-entrega -createdAt -updatedAt -__v")
+                .populate("carpintero", "_id nombre apellido");
+        }
+
+        res.status(200).json(proyectos);
     } catch (error) {
-        console.error(error)
-        res.status(500).json({ msg: `❌ Error en el servidor - ${error}` })
+        console.error(error);
+        res.status(500).json({ msg: `❌ Error en el servidor - ${error}` });
     }
-}
+};
+
 
 // =====================================================
 // DETALLE DE UN PROYECTO
@@ -331,7 +340,7 @@ const perfilClienteProyecto = (req, res) => {
             imagenProyectoIA,
             estadoProyecto,
             fechaEntrega
-        } = req.proyectoHeader
+        } = req.userData;
 
         res.status(200).json({
             _id,

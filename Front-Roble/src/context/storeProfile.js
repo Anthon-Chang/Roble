@@ -17,13 +17,13 @@ const storeProfile = create((set) => ({
         
     user: null,
     clearUser: () => set({ user: null }),
-    profile: async () => {
-        try {
+   profile: async () => {
+  try {
     const storedUser = JSON.parse(localStorage.getItem("auth-token"))
     const rol = storedUser?.state?.rol
 
     const endpoint =
-    rol === "carpintero"
+      rol === "carpintero"
         ? "api/carpintero/perfil"
         : "api/proyecto/perfil"
 
@@ -31,15 +31,16 @@ const storeProfile = create((set) => ({
     const respuesta = await axios.get(url, getAuthHeaders())
 
     set({
-    user: {
+      user: {
         ...respuesta.data,
-        rol,
-    },
+        rol, // 👈 solo para mostrar en pantalla
+      },
     })
-    } catch (error) {
+  } catch (error) {
     console.error(error)
-    }
+  }
 },
+
 
 
     updateProfile:async(url, data)=>{

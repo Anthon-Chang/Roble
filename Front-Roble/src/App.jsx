@@ -1,4 +1,4 @@
-
+import PrivateRouteWithRole from './routes/PrivateRouteWithRole'
 import { BrowserRouter, Route, Routes } from 'react-router'
 import { Home } from './pages/Home'
 import Login from './pages/Login'
@@ -26,7 +26,7 @@ import PublicRoute from './routes/PublicRoute'
 import ProtectedRoute from './routes/ProtectedRoute'
 import storeProfile from './context/storeProfile'
 import storeAuth from './context/storeAuth'
-
+import { Forbidden } from './pages/Forbidden'
 function App() {
 
   const [darkMode, setDarkMode] = useState(false);
@@ -56,6 +56,7 @@ function App() {
       <Routes>
         
         <Route element={<PublicRoute />}>
+          <Route path="forbidden" element={<Forbidden />} />
           <Route index element={<Home/>}/>
           <Route path='home' element={<Home/>}/>
           <Route path='login' element={<Login/>}/>
@@ -75,12 +76,25 @@ function App() {
             <ProtectedRoute>
               <Routes>
                 <Route element={<Dashboard />}>
+                <Route index element={
+                    <PrivateRouteWithRole>
+                      <Panel />
+                    </PrivateRouteWithRole>
+                  } />
                   <Route index element={<Panel/>}/>
                   <Route path='profile' element={<Profile/>}/>
                   <Route path='list' element={<List/>}/>
                   <Route path='details/:id' element={<Details/>}/>
-                  <Route path='create' element={<Create/>}/>
-                  <Route path='update/:id' element={<Update/>}/>
+                  <Route path='create' element={
+                    <PrivateRouteWithRole>
+                      <Create />
+                    </PrivateRouteWithRole>
+                  } />
+                  <Route path='update/:id' element={
+                    <PrivateRouteWithRole>
+                      <Update />
+                    </PrivateRouteWithRole>
+                  } /> 
                   <Route path='chat' element={<Chat/>}/>
                 </Route>
               </Routes>
