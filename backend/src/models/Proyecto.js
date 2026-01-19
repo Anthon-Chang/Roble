@@ -58,14 +58,17 @@ const proyectoSchema = new Schema({
         trim: true,
         default: null
     },
-    precioProyecto: {
-        type: Number,
-        default: 0
-    },
     carpintero: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Carpintero"
+    },
+    estados: [
+    {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Estado"
     }
+]
+
 }, {
     timestamps: true
 });
