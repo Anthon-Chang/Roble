@@ -1,4 +1,5 @@
-import { useState } from "react"
+/* eslint-disable react/prop-types */
+import { useState, useEffect } from "react"
 import { useFetch } from "../../hooks/useFetch"
 import { useNavigate } from "react-router"
 import { useForm } from "react-hook-form"
@@ -6,7 +7,7 @@ import { generateAvatar, convertBlobToBase64 } from "../../helpers/consultarIA"
 import { toast, ToastContainer } from "react-toastify"
 import ThreeViewer from "../model3D/model3DViewer.jsx";
 
-export const Form = () => {
+export const Form = ({project}) => {
 
     const [model3D, setModel3D] = useState({
         prompt: "",
@@ -21,7 +22,7 @@ export const Form = () => {
     });
 
     const navigate = useNavigate()
-    const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm()
+    const { register, handleSubmit, formState: { errors }, setValue, watch , reset } = useForm()
     const fetchDataBackend = useFetch()
 
     const selectedOption = watch("imageOption")
@@ -67,19 +68,39 @@ export const Form = () => {
         }
     }
 
-    const registerProject = async (dataForm) => {
-        // validar condiciones de imagen según la opción
-        if (dataForm.imageOption === 'upload' && (!dataForm.imagenProyecto || dataForm.imagenProyecto.length === 0)) {
-            toast.error('Debes seleccionar una imagen para subir')
-            return
-        }
-        if (dataForm.imageOption === 'ia' && !dataForm.imagenProyectoIA) {
-            toast.error('Genera la imagen con IA antes de enviar')
-            return
-        }
+    useEffect(() => {
+    if (project) {
+        reset({
+            _id: project._id,
+            cedulaCliente: project.cedulaCliente,
+            nombreCliente: project.nombreCliente,
+            emailCliente: project.emailCliente,
+            celularCliente: project.celularCliente,
+            nombreProyecto: project.nombreProyecto,
+            precioProyecto: project.precioProyecto,
+            fechaEntrega: new Date(project.fechaEntrega)
+                .toLocaleDateString('en-CA', { timeZone: 'UTC' }),
+            descripcionProyecto: project.descripcionProyecto,
+            modelo3DUrl: project.modelo3DUrl,
+            imageOption: "upload" 
+        })
+    }
+}, [project, reset])
 
-        const formData = new FormData()
-        const allowedFields = [
+
+    const registerProject = async (dataForm) => {
+    // Validaciones de imagen
+    if (dataForm.imageOption === 'upload' && (!dataForm.imagenProyecto || dataForm.imagenProyecto.length === 0)) {
+        toast.error('Debes seleccionar una imagen para subir')
+        return
+    }
+    if (dataForm.imageOption === 'ia' && !dataForm.imagenProyectoIA) {
+        toast.error('Genera la imagen con IA antes de enviar')
+        return
+    }
+
+    const formData = new FormData()
+    const allowedFields = [
         "cedulaCliente",
         "nombreCliente",
         "emailCliente",
@@ -89,34 +110,45 @@ export const Form = () => {
         "fechaEntrega",
         "descripcionProyecto",
         "modelo3DUrl"
-        ]
+    ]
 
-allowedFields.forEach(field => {
-  if (dataForm[field]) {
-    formData.append(field, dataForm[field])
-  }
-})
-
-// Imagen normal
-if (dataForm.imageOption === "upload" && dataForm.imagenProyecto?.[0]) {
-  formData.append("imagenProyecto", dataForm.imagenProyecto[0])
-}
-
-// Imagen IA
-if (dataForm.imageOption === "ia" && dataForm.imagenProyectoIA) {
-  formData.append("imagenProyectoIA", dataForm.imagenProyectoIA)
-}
-
-
-        const url = `${import.meta.env.VITE_BACKEND_URL}/api/proyecto/registro`
-        const storedUser = JSON.parse(localStorage.getItem("auth-token"))
-        const headers = { Authorization: `Bearer ${storedUser?.state?.token}` }
-
-        const response = await fetchDataBackend(url, formData, "POST", headers, true)
-        if (response) {
-            setTimeout(() => navigate("/dashboard/list"), 1400)
+    allowedFields.forEach(field => {
+        if (dataForm[field]) {
+            formData.append(field, dataForm[field])
         }
+    })
+
+    // Imagen normal
+    if (dataForm.imageOption === "upload" && dataForm.imagenProyecto?.[0]) {
+        formData.append("imagenProyecto", dataForm.imagenProyecto[0])
     }
+
+    // Imagen IA
+    if (dataForm.imageOption === "ia" && dataForm.imagenProyectoIA) {
+        formData.append("imagenProyectoIA", dataForm.imagenProyectoIA)
+    }
+
+    const storedUser = JSON.parse(localStorage.getItem("auth-token"))
+    const headers = { Authorization: `Bearer ${storedUser?.state?.token}` }
+
+    let response
+    let url
+
+    if (dataForm._id) {
+        // 🔹 ACTUALIZAR PROYECTO
+        url = `${import.meta.env.VITE_BACKEND_URL}/api/proyecto/actualizar/${dataForm._id}`
+        response = await fetchDataBackend(url, formData, "PUT", headers, true)
+    } else {
+        // 🔹 REGISTRAR PROYECTO
+        url = `${import.meta.env.VITE_BACKEND_URL}/api/proyecto/registro`
+        response = await fetchDataBackend(url, formData, "POST", headers, true)
+    }
+
+    if (response) {
+        setTimeout(() => navigate("/dashboard/list"), 1400)
+    }
+
+}
 
     return (
         <form onSubmit={handleSubmit(registerProject)}>
@@ -129,7 +161,7 @@ if (dataForm.imageOption === "ia" && dataForm.imagenProyectoIA) {
                     <label className="mb-2 block text-sm font-semibold">Cédula</label>
                     <div className="flex items-center gap-10 mb-5">
                         <input type="text" placeholder="Ingresa la cédula" className="block w-full rounded-md border border-gray-300 py-1 px-2 text-gray-500" {...register("cedulaCliente", { required: "La cédula es obligatoria" })} />
-                        <button type="button" className="py-1 px-8 bg-amber-700 text-white border rounded-xl duration-300 hover:bg-amber-800  hover:text-white sm:w-80">Consultar</button>
+                        <button type="button" className="py-1 px-8 bg-amber-700 text-white border rounded-xl duration-300 hover:bg-amber-800  hover:text-white sm:w-80" disabled={project}>Consultar</button>
                     </div>
                     {errors.cedulaCliente && <p className="text-red-800">{errors.cedulaCliente.message}</p>}
                 </div>
@@ -158,7 +190,7 @@ if (dataForm.imageOption === "ia" && dataForm.imagenProyectoIA) {
 
                 <div>
                     <label className="mb-2 block text-sm font-semibold">Proyecto</label>
-                    <input type="text" placeholder="Ingresar nombre del proyecto" className="block w-full rounded-md border border-gray-300 py-1 px-2 text-gray-500 mb-5" {...register("nombreProyecto", { required: "El nombre del proyecto es obligatorio" })} />
+                    <input type="text" placeholder="Ingresar nombre del proyecto" className="block w-full rounded-md border border-gray-300 py-1 px-2 text-gray-500 mb-5" {...register("nombreProyecto", { required: "El nombre del proyecto es obligatorio" })} disabled={project} />
                     {errors.nombreProyecto && <p className="text-red-800">{errors.nombreProyecto.message}</p>}
                 </div>
 
@@ -233,8 +265,10 @@ if (dataForm.imageOption === "ia" && dataForm.imagenProyectoIA) {
 
             <input type="hidden" {...register("imagenProyectoIA")} />
             <input type="hidden" {...register("modelo3DUrl")} />
+            {project && <input type="hidden" {...register("_id")} />}
 
-            <input type="submit" className="bg-amber-700 w-full p-2 mt-5 text-white uppercase font-bold rounded-lg hover:bg-amber-800 cursor-pointer transition-all" value="Registrar" />
+
+            <input type="submit" className="bg-amber-700 w-full p-2 mt-5 text-white uppercase font-bold rounded-lg hover:bg-amber-800 cursor-pointer transition-all" value={project ? "Actualizar" : "Registrar"} />
         </form>
     )
 }

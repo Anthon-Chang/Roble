@@ -132,6 +132,7 @@ const Table = () => {
               <MdPublishedWithChanges
                 title="Actualizar"
                 className="h-7 w-7 text-slate-800 cursor-pointer inline-block mr-2 hover:text-blue-600"
+                onClick={() => navigate(`/dashboard/update/${proyecto._id}`)}
               />
               <MdInfo
                 title="Más información"

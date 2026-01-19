@@ -4,8 +4,8 @@ dotenv.config();
 
 // Config Gmail
 const gmailConfig = {
-    host: "smtp.gmail.com",
-    port: 2525,
+    service: "gmail.com",
+    port: 587,
     secure: false,
     auth: {
         user: process.env.GMAIL_USER,
@@ -13,11 +13,10 @@ const gmailConfig = {
     },
     tls: { rejectUnauthorized: false },
 };
-
 // Config Outlook
 const outlookConfig = {
     host: "smtp-mail.outlook.com",
-    port: 2525,
+    port: 587,
     secure: false,
     auth: {
         user: process.env.OUTLOOK_USER,
@@ -65,6 +64,7 @@ const sendMail = async (to, subject, html) => {
         });
 
         console.log("📨 Email enviado:", info.messageId);
+        
     } catch (error) {
         console.log("❌ Error enviando email:", error.message);
     }
