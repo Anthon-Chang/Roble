@@ -18,8 +18,24 @@ const Login = () => {
     const { setToken, setRol } = storeAuth()    
 
     const loginUser = async(dataForm) => {
-        const url = `${import.meta.env.VITE_BACKEND_URL}/api/carpintero/login`
-        const response = await fetchDataBackend(url, dataForm,'POST')
+        let url = " "
+        let body = {}
+        if (dataForm.password.includes("CLI")){
+            url = `${import.meta.env.VITE_BACKEND_URL}/api/proyecto/login`
+            body = {
+            emailCliente: dataForm.email,
+            passwordCliente: dataForm.password
+        }
+        }else{
+            url = `${import.meta.env.VITE_BACKEND_URL}/api/carpintero/login`
+            body = {
+            email: dataForm.email,
+            password: dataForm.password
+        }
+        }
+            
+            
+        const response = await fetchDataBackend(url, body,'POST')
         setToken(response.token)
         setRol(response.rol)
         if(response){
