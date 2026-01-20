@@ -7,13 +7,13 @@ import { authSimple } from '../middlewares/authSimple.js';
 const router = Router()
 
 router.post("/login", loginClienteProyecto)
-router.get("/perfil", authSimple, perfilClienteProyecto)
+router.get("/perfil", verificarTokenJWT, perfilClienteProyecto)
 
-router.post("/registro", authSimple, registrarProyecto)
-router.get("/listar",authSimple, listarProyectos)
-router.get("/detalle/:id",authSimple, detalleProyecto)
-router.delete("/eliminar/:id",authSimple, eliminarProyecto)
-router.put("/actualizar/:id",authSimple, actualizarProyecto)
+router.post("/registro", verificarTokenJWT, registrarProyecto)
+router.get("/listar",verificarTokenJWT, listarProyectos)
+router.get("/detalle/:id",verificarTokenJWT, detalleProyecto)
+router.delete("/eliminar/:id",verificarTokenJWT, eliminarProyecto)
+router.put("/actualizar/:id",verificarTokenJWT, actualizarProyecto)
 
 
 

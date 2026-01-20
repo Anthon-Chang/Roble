@@ -77,7 +77,7 @@ export const Form = ({project}) => {
             emailCliente: project.emailCliente,
             celularCliente: project.celularCliente,
             nombreProyecto: project.nombreProyecto,
-            precioProyecto: project.precioProyecto,
+            /* precioProyecto: project.precioProyecto, */
             fechaEntrega: new Date(project.fechaEntrega)
                 .toLocaleDateString('en-CA', { timeZone: 'UTC' }),
             descripcionProyecto: project.descripcionProyecto,
@@ -106,7 +106,7 @@ export const Form = ({project}) => {
         "emailCliente",
         "celularCliente",
         "nombreProyecto",
-        "precioProyecto",
+        /* "precioProyecto", */
         "fechaEntrega",
         "descripcionProyecto",
         "modelo3DUrl"
@@ -243,11 +243,11 @@ export const Form = ({project}) => {
                 )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
+                    {/* <div>
                         <label htmlFor="precio" className="mb-2 block text-sm font-semibold">Precio</label>
                         <input id="precio" type="number" step="0.01" min="0" placeholder="0.00" className="block w-full rounded-md border border-gray-300 py-2 px-3 text-gray-700" {...register("precioProyecto", { required: "El precio del proyecto es obligatorio" })} />
                         {errors.precioProyecto && <p className="text-red-800">{errors.precioProyecto.message}</p>}
-                    </div>
+                    </div> */}
 
                     <div>
                         <label htmlFor="fechaEntrega" className="mb-2 block text-sm font-semibold">Fecha de entrega</label>

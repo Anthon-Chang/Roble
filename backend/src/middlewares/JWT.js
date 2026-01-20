@@ -29,12 +29,14 @@ const verificarTokenJWT = async (req, res, next) => {
             req.carpinteroHeader = carpinteroBDD
             next()
         }
-        else{
-            const proyectoBDD = await Proyecto.findById(id).lean().select("-password")
-            if (!proyectoBDD) return res.status(401).json({ msg: "Usuario no encontrado" })
-            req.proyectoHeader = proyectoBDD
-            next()
+        else {
+            const proyectosBDD = await Proyecto.find({ emailCliente: req.userEmail }).lean().select("-password");
+            if (!proyectosBDD || proyectosBDD.length === 0)
+                return res.status(401).json({ msg: "Usuario no encontrado" });
+            req.proyectosHeader = proyectosBDD;
+            next();
         }
+
 } catch (error) {
     console.log(error)
     return res.status(401).json({ msg: `Token inválido o expirado - ${error}` })
