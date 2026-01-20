@@ -100,7 +100,7 @@ const Table = () => {
       {/* Encabezado */}
       <thead className="bg-gray-800 text-slate-400">
         <tr>
-          {["N°", "Producto", "Nombre del cliente", "Email", "Celular", "Precio", "Fecha de entrega","Estado","Acciones"].map((header) => (
+          {["N°", "Producto", "Nombre del cliente", "Email", "Celular", "Fecha de entrega","Estado","Acciones"].map((header) => (
             <th key={header} className="p-2">
               {header}
             </th>
@@ -117,7 +117,6 @@ const Table = () => {
               <td className="px-2 py-1">{proyecto.nombreCliente}</td>
               <td className="px-2 py-1">{proyecto.emailCliente}</td>
               <td className="px-2 py-1">{proyecto.celularCliente}</td>
-              <td className="px-2 py-1">{proyecto.precioProyecto ?? 0}</td>
               <td className="px-2 py-1">{proyecto.fechaEntrega ? new Date(proyecto.fechaEntrega).toLocaleDateString() : "-"}</td>
               <td>
                 <span
