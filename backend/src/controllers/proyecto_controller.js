@@ -327,41 +327,15 @@ const loginClienteProyecto = async (req, res) => {
 // =====================================================
 // PERFIL CLIENTE
 // =====================================================
-const perfilClienteProyecto = (req, res) => {
+export const perfilClienteProyecto = async (req, res) => {
     try {
-        const {
-            _id,
-            nombreCliente,
-            cedulaCliente,
-            emailCliente,
-            celularCliente,
-            nombreProyecto,
-            descripcionProyecto,
-            imagenProyecto,
-            imagenProyectoIA,
-            estadoProyecto,
-            fechaEntrega
-        } = req.userData;
-
-        res.status(200).json({
-            _id,
-            nombreCliente,
-            cedulaCliente,
-            emailCliente,
-            celularCliente,
-            nombreProyecto,
-            descripcionProyecto,
-            imagenProyecto,
-            imagenProyectoIA,
-            estadoProyecto,
-            fechaEntrega
-        })
-
+        // Devuelve los datos del cliente que ya fueron obtenidos en el middleware
+        res.json(req.clienteHeader);
     } catch (error) {
-        console.error(error)
-        res.status(500).json({ msg: `❌ Error en el servidor - ${error}` })
+        console.error(error);
+        res.status(500).json({ msg: "Error del servidor" });
     }
-}
+};
 
 
 export {
@@ -370,6 +344,6 @@ export {
     detalleProyecto,
     eliminarProyecto,
     actualizarProyecto,
-    loginClienteProyecto,
-    perfilClienteProyecto
+    loginClienteProyecto
+    /* perfilClienteProyecto */
 }

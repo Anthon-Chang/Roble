@@ -29,11 +29,12 @@ const verificarTokenJWT = async (req, res, next) => {
             req.carpinteroHeader = carpinteroBDD
             next()
         }
-        else {
-            const proyectosBDD = await Proyecto.find({ emailCliente: req.userEmail }).lean().select("-password");
-            if (!proyectosBDD || proyectosBDD.length === 0)
+       else {
+            const clienteBDD = await Proyecto.findById(id).lean().select("-passwordCliente");
+            if (!clienteBDD) {
                 return res.status(401).json({ msg: "Usuario no encontrado" });
-            req.proyectosHeader = proyectosBDD;
+            }
+            req.clienteHeader = clienteBDD;
             next();
         }
 
