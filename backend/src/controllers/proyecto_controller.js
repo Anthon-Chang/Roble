@@ -110,22 +110,42 @@ const registrarProyecto = async (req, res) => {
 // =====================================================
 // LISTAR PROYECTOS ACTIVOS DEL CARPINTERO
 // =====================================================
-const listarProyectos = async (req, res) => {
+export const listarProyectos = async (req, res) => {
     try {
-        const proyectos = await Proyecto.find({
-            estadoProyecto: true,
-            carpintero: req.carpinteroHeader._id
-        })
-        .select("-entrega -createdAt -updatedAt -__v")
-        .populate("carpintero", "_id nombre apellido")
+        let proyectos;
 
-        res.status(200).json(proyectos)
+        if (req.carpinteroHeader) {
+            // Si es carpintero, devuelve proyectos asignados a él
+            proyectos = await Proyecto.find({
+                estadoProyecto: true,
+                carpintero: req.carpinteroHeader._id
+            })
+            .select("-passwordCliente -__v")
+            .populate("carpintero", "_id nombre apellido");
+
+        } else if (req.clienteHeader) {
+            // Si es cliente, devuelve sus proyectos
+            proyectos = await Proyecto.find({
+                estadoProyecto: true,
+                emailCliente: req.clienteHeader.emailCliente
+            })
+            .select("-passwordCliente -__v")
+            .populate("carpintero", "_id nombre apellido");
+        } else {
+            return res.status(401).json({ msg: "Usuario no autorizado" });
+        }
+
+        if (!proyectos || proyectos.length === 0) {
+            return res.status(404).json({ msg: "No hay proyectos disponibles" });
+        }
+
+        res.status(200).json(proyectos);
 
     } catch (error) {
-        console.error(error)
-        res.status(500).json({ msg: `❌ Error en el servidor - ${error}` })
+        console.error(error);
+        res.status(500).json({ msg: `❌ Error en el servidor - ${error}` });
     }
-}
+};
 
 
 // =====================================================
@@ -340,7 +360,7 @@ export const perfilClienteProyecto = async (req, res) => {
 
 export {
     registrarProyecto,
-    listarProyectos,
+    /* listarProyectos, */
     detalleProyecto,
     eliminarProyecto,
     actualizarProyecto,
