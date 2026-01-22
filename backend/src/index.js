@@ -1,14 +1,35 @@
-import app from './server.js'
-import { connectDB } from './database.js';
+import app from "./server.js";
+import { connectDB } from "./database.js";
 
+import http from "http";
+import { Server } from "socket.io";
 import cors from "cors";
+import { chatSocket } from "./sockets/chat.socket.js";
 
+// CORS (backend)
 app.use(cors({
-  origin: "https://rob1e.netlify.app", // o la URL de tu frontend: "https://TU_FRONTEND.netlify.app"
-  methods: "GET,POST,PUT,DELETE"
+  origin: "https://rob1e.netlify.app",
+  methods: ["GET", "POST", "PUT", "DELETE"]
 }));
+
+// Conectar BD
 connectDB();
 
-app.listen(app.get('port'),()=>{
-    console.log(`Server ok on http://localhost:${app.get('port')}`);
-})
+// Crear servidor HTTP
+const server = http.createServer(app);
+
+// Socket.IO
+const io = new Server(server, {
+  cors: {
+    origin: "https://rob1e.netlify.app",
+    methods: ["GET", "POST"]
+  }
+});
+
+// Inicializar sockets
+chatSocket(io);
+
+// Levantar servidor
+server.listen(app.get("port"), () => {
+  console.log(`🚀 Server ok on http://localhost:${app.get("port")}`);
+});
