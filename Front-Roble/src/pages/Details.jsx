@@ -1,20 +1,40 @@
-/* eslint-disable no-unused-vars */
 import { useEffect, useState } from "react"
 import TableTreatments from "../components/treatments/Table"
 import ModalTreatments from "../components/treatments/Modal"
 import { useParams } from "react-router"
 import {useFetch} from "../hooks/useFetch"
 import storeAuth from "../context/storeAuth"
+import storEstado from "../context/storEstado"
+import { ToastContainer} from 'react-toastify'
 
 const Details = () => {
     const { rol } = storeAuth()
     const { id } = useParams()
     const [proyecto, setProyecto] = useState({})
     const  fetchDataBackend  = useFetch()
-    const [treatments, setTreatments] = useState(["demo"])
+    const [treatments, setTreatments] = useState([])
+    const { modal, toggleModal, deletEstado } = storEstado()
+    
 
     const formatDate = (date) => {
         return new Date(date).toLocaleDateString('es-EC', { dateStyle: 'long', timeZone: 'UTC' })
+    }
+
+    const handleDeleteEstado = async (estadoId) => {
+        const url = `${import.meta.env.VITE_BACKEND_URL}/api/estado/eliminar/${estadoId}`
+        await deletEstado(url)
+
+        const reloadUrl = `${import.meta.env.VITE_BACKEND_URL}/api/proyecto/detalle/${id}`
+        const storedUser = JSON.parse(localStorage.getItem("auth-token"))
+
+        const headers = {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${storedUser.state.token}`
+        }
+
+        const response = await fetchDataBackend(reloadUrl, null, "GET", headers)
+        setProyecto(response)
+        setTreatments(response.estados || [])
     }
 
     useEffect(() => {
@@ -27,14 +47,19 @@ const Details = () => {
             }
             const response = await fetchDataBackend(url, null, "GET", headers)
             setProyecto(response)
+            setTreatments(response.estados || [])
         }
-        listProyecto()
-    }, [])
+        if(modal===false){
+            listProyecto()
+        }  
+        
+    }, [modal])
 
 
 
     return (
         <>
+         <ToastContainer/>
             <div>
                 <h1 className='font-black text-4xl text-gray-500'>Visualizar</h1>
                 <hr className='my-4 border-t-2 border-gray-300' />
@@ -130,13 +155,18 @@ const Details = () => {
                     {/* Apertura del modal tratamientos */}
                     <p>Este módulo te permite gestionar tratamientos</p>
                     {rol !== "cliente" && (
-                        <button className="px-5 py-2 bg-green-800 text-white rounded-lg hover:bg-green-700">
+                        <button className="px-5 py-2 bg-green-800 text-white rounded-lg hover:bg-green-700" onClick={()=>{toggleModal("treatments")}}>
                             Registrar
                         </button>
                     )}
 
 
-                    {false  && (<ModalTreatments/>)}
+                    {/* - {modal === "treatments" && (<ModalTreatments patientID={proyecto._id}/>)} */}
+                    {/* +{modal === "treatments" && (<ModalTreatments proyectoID={proyecto._id} />)} */}
+                    {modal === "treatments" && proyecto?._id && (
+                        <ModalTreatments proyectoID={proyecto._id} />
+                    )}
+
 
                 </div>
                 
@@ -149,7 +179,7 @@ const Details = () => {
                             <span className="font-medium">No existen registros</span>
                         </div>
                         :
-                        <TableTreatments treatments={treatments} />
+                        <TableTreatments treatments={treatments} onDelete={handleDeleteEstado}/>
                 }
                 
             </div>
