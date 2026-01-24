@@ -117,10 +117,10 @@ const Login = () => {
             </div>
 
             {/* Google */}
-            <button className="w-full mt-5 flex items-center justify-center border py-2 rounded-xl text-sm hover:bg-[#bb4d00] hover:text-white">
+            {/* <button className="w-full mt-5 flex items-center justify-center border py-2 rounded-xl text-sm hover:bg-[#bb4d00] hover:text-white">
                 <img className="w-5 mr-2" src="https://cdn-icons-png.flaticon.com/512/281/281764.png" />
                 Sign in with Google
-            </button>
+            </button> */}
 
             {/* Olvidaste tu contraseña */}
             <div className="mt-5 text-xs text-left">
