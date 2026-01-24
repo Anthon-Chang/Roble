@@ -1,3 +1,4 @@
+import { ToastContainer } from 'react-toastify'
 import { MdDeleteForever, MdAttachMoney } from "react-icons/md"
 import storeAuth from "../../context/storeAuth"
 import ModalPayment from "./ModalPayment"
@@ -5,7 +6,6 @@ import { Elements } from "@stripe/react-stripe-js"
 import { loadStripe } from "@stripe/stripe-js"
 import { useState } from "react"
 const stripePromise = loadStripe(import.meta.env.VITE_STRAPI_KEY)
-import { ToastContainer } from 'react-toastify'
 import storEstado from "../../context/storEstado"
 
 const TableTreatments = ({ treatments, onDelete }) => {
@@ -66,19 +66,17 @@ const TableTreatments = ({ treatments, onDelete }) => {
                                         }}
                                     />
                                 )}
-                            {
-                                rol !== "cliente" &&(
-                                    <MdDeleteForever
-                                className={
+                            {rol !== "cliente" && onDelete && (
+                                <MdDeleteForever
+                                    className={
                                     treatment.estadoPago === "Pagado"
-                                        ? "h-8 w-8 text-gray-500 pointer-events-none inline-block"
+                                        ? "h-8 w-8 text-gray-500 opacity-50 inline-block cursor-pointer hover:text-red-600 transition-colors duration-200"
                                         : "h-8 w-8 text-red-900 cursor-pointer inline-block hover:text-red-600"
-                                }
-                                title="Eliminar"
-                                onClick={() => onDelete(treatment._id)}
-                            />
-                                )
-                            }
+                                    }
+                                    title="Eliminar"
+                                    onClick={() => onDelete(treatment._id)}
+                                />
+                                )}
 
                             
                         </td>
