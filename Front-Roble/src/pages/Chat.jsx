@@ -1,121 +1,233 @@
 import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
-import { io } from 'socket.io-client'
-import { toast, ToastContainer } from "react-toastify"
+import { io } from "socket.io-client"
+import { ToastContainer, toast } from "react-toastify"
+import "react-toastify/dist/ReactToastify.css"
+
+const emojis = ["😀", "😂", "😍", "😎", "😭", "🔥", "👍", "❤️"]
 
 const Chat = () => {
+  const [responses, setResponses] = useState([])
+  const [socket, setSocket] = useState(null)
+  const [chat, setChat] = useState(true)
+  const [nameUser, setNameUser] = useState("")
+  const [isConnected, setIsConnected] = useState(false)
+  const [showEmojis, setShowEmojis] = useState(false)
 
-    const [responses, setResponses] = useState([])
-    const [socket, setSocket] = useState(null)
-    const [chat, setChat] = useState(true)
-    const [nameUser, setNameUser] = useState("")
-    const { register, handleSubmit, formState: { errors }, reset } = useForm()
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm()
 
+  /* ------------------ ENTRAR AL CHAT ------------------ */
+  const handleEnterChat = (data) => {
+    setNameUser(data.name)
+    setChat(false)
+  }
 
-
-    const handleEnterChat = (data) => {
-        setNameUser(data.name)
-        setChat(false)
+  /* ------------------ ENVIAR MENSAJE ------------------ */
+  const handleMessageChat = (data) => {
+    if (!socket || !socket.connected) {
+      return toast.error("❌ No hay conexión con el servidor")
     }
 
-    const handleMessageChat = (data) => {
-
-        if (!socket || !socket.connected) return toast.error("No hay conexión con el servidor")
-
-        const newMessage = {
-            body: data.message,
-            from: nameUser,
-        }
-        socket.emit("enviar-mensaje-front-back", newMessage)
-        setResponses((prev) => [...prev, newMessage])
-        reset({ message: "" })
+    const newMessage = {
+      body: data.message,
+      from: nameUser,
     }
 
-    useEffect(() => {
-        const newSocket = io("http://localhost:4000")
-        setSocket(newSocket)
-        newSocket.on("enviar-mensaje-front-back", (payload) => {
-            console.log(payload)
-            setResponses((prev) => [...prev, payload])
-        })
-        return () => newSocket.disconnect()
-    }, [])
+    socket.emit("enviar-mensaje-front-back", newMessage)
+    setResponses((prev) => [...prev, newMessage])
+    reset({ message: "" })
+  }
 
+  /* ------------------ SOCKET ------------------ */
+  useEffect(() => {
+    const newSocket = io("http://localhost:4000", {
+      transports: ["websocket"],
+    })
 
-    return (
+    setSocket(newSocket)
 
-        <>
-            <ToastContainer />
+    newSocket.on("connect", () => setIsConnected(true))
+    newSocket.on("disconnect", () => setIsConnected(false))
 
-            {
-                chat
-                    ? 
-                    (
-                        <div>
+    newSocket.on("enviar-mensaje-front-back", (payload) => {
+      setResponses((prev) => [...prev, payload])
+    })
 
-                            <form onSubmit={handleSubmit(handleEnterChat)} className="flex justify-center gap-5">
+    return () => newSocket.disconnect()
+  }, [])
 
-                                <input
-                                    type="text"
-                                    placeholder="Ingresa tu nombre de usuario"
-                                    className="block w-1/2 rounded-md border border-gray-300 py-1 px-2 text-gray-500"
-                                    {...register("name", { required: "El nombre de usuario es obligatorio" })}
-                                />
+  /* ------------------ UI ------------------ */
+  return (
+    <>
+      <ToastContainer />
 
-                                <button className="py-2 w-1/2 block text-center bg-gray-500 text-slate-300 
-                                border rounded-xl hover:scale-100 duration-300
-                                hover:bg-gray-900 hover:text-white">Ingresar al chat</button>
+      {chat ? (
+        /* ---------- LOGIN ---------- */
+        <div className="flex justify-center items-center min-h-screen bg-gray-100 px-4">
+          <form
+            onSubmit={handleSubmit(handleEnterChat)}
+            className="bg-white shadow-xl rounded-xl p-8 w-full max-w-md space-y-4"
+          >
+            <h2 className="text-2xl font-bold text-center text-[#461901]">
+              💬 Chat en vivo
+            </h2>
 
-                            </form>
+            <input
+              type="text"
+              placeholder="Tu nombre de usuario"
+              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#f59e0b]"
+              {...register("name", { required: "El nombre es obligatorio" })}
+            />
 
-                            {errors.name && <p className="text-red-800">{errors.name.message}</p>}
-                        </div>
-                    )
-                    : 
-                    (
-                        <div className="flex flex-col justify-center h-full ">
+            {errors.name && (
+              <p className="text-red-600 text-sm">{errors.name.message}</p>
+            )}
 
-                            <div className="flex flex-col space-y-4 p-3 overflow-y-auto scrollbar-thumb-blue 
-                            scrollbar-thumb-rounded scrollbar-track-blue-lighter scrollbar-w-2 scrolling-touch">
+            <button
+              className="
+                w-full
+                bg-[#f59e0b]
+                text-white
+                py-2
+                rounded-md
+                hover:bg-[#461901]
+                transition
+              "
+            >
+              Entrar al chat
+            </button>
+          </form>
+        </div>
+      ) : (
+        /* ---------- CHAT ---------- */
+        <div
+          className="
+            flex flex-col
+            h-[90vh] md:h-[85vh] lg:h-[80vh]
+            w-full
+            max-w-full md:max-w-2xl lg:max-w-3xl xl:max-w-4xl
+            mx-auto
+            bg-white
+            shadow-xl
+            rounded-xl
+            overflow-hidden
+          "
+        >
+          {/* HEADER */}
+          <div className="flex items-center justify-between px-4 py-3 bg-[#f59e0b] text-white">
+            <p className="font-semibold">💬 Chat en vivo</p>
 
-                                {
-                                    responses.map((response, index) => (
+            <span className="flex items-center gap-2 text-sm">
+              <span
+                className={`h-3 w-3 rounded-full ${
+                  isConnected ? "bg-green-400" : "bg-red-500"
+                }`}
+              ></span>
+              {isConnected ? "Conectado" : "Desconectado"}
+            </span>
+          </div>
 
-                                        <div key={index} 
-                                        className={`my-2 p-4 text-sm rounded-md text-white  ${response.from === nameUser ? 'bg-slate-700' : 'bg-black ml-auto'}`}>
-                                            {response.from} - {response.body}
-                                        </div>
-                                    ))
-                                }
-                            </div>
+          {/* MENSAJES */}
+          <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-gray-100">
+            {responses.map((response, index) => (
+              <div
+                key={index}
+                className={`max-w-[85%] md:max-w-[70%] px-4 py-2 rounded-xl text-sm break-words ${
+                  response.from === nameUser
+                    ? "bg-[#f59e0b] text-white ml-auto rounded-br-none"
+                    : "bg-gray-300 text-gray-900 mr-auto rounded-bl-none"
+                }`}
+              >
+                <p className="text-xs opacity-70 mb-1">{response.from}</p>
+                {response.body}
+              </div>
+            ))}
+          </div>
 
+          {/* INPUT */}
+          <div className="border-t p-4 relative bg-white">
+            {/* EMOJIS */}
+            {showEmojis && (
+              <div className="absolute bottom-20 left-4 bg-white shadow-lg rounded-lg p-2 flex gap-2 flex-wrap w-40 md:w-52 z-10">
+                {emojis.map((emoji, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    className="text-xl hover:scale-125 transition"
+                    onClick={() => {
+                      setValue(
+                        "message",
+                        `${watch("message") || ""}${emoji}`
+                      )
+                      setShowEmojis(false)
+                    }}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            )}
 
-                            <div className="border-t-2 border-gray-200 px-4 pt-4 mb-2 sm:mb-0">
-                                
-                                <form onSubmit={handleSubmit(handleMessageChat)}>
-                                    
-                                    <div className="relative flex gap-4">
-                                        
-                                        <input type="text" placeholder="Escribe tu mensaje!" 
-                                        className="w-full focus:outline-none focus:placeholder-gray-400
-                                        text-gray-600 placeholder-gray-600 pl-2 bg-gray-200 rounded-md py-3"
-                                        {...register("message", { required: "El mensaje es obligatorio" })} />
+            <form
+              onSubmit={handleSubmit(handleMessageChat)}
+              className="flex items-center gap-3"
+            >
+              <button
+                type="button"
+                onClick={() => setShowEmojis(!showEmojis)}
+                className="text-2xl hover:scale-110 transition"
+              >
+                😊
+              </button>
 
-                                        <button className="py-1 px-8 bg-green-700 text-slate-300 border rounded-xl 
-                                        duration-300  hover:text-white sm:w-40" >
-                                            Enviar
-                                        </button>
+              <input
+                type="text"
+                placeholder="Escribe tu mensaje..."
+                className="
+                  flex-1
+                  px-4 py-2
+                  rounded-full
+                  bg-gray-200
+                  focus:outline-none
+                  focus:ring-2
+                  focus:ring-[#f59e0b]
+                "
+                {...register("message", {
+                  required: "El mensaje es obligatorio",
+                })}
+              />
 
-                                    </div>
-                                    {errors.message && <p className="text-red-800">{errors.message.message}</p>}
-                                </form>
-                            </div>
-                        </div>
+              <button
+                className="
+                  bg-[#f59e0b]
+                  text-white
+                  px-6 py-2
+                  rounded-full
+                  hover:bg-[#461901]
+                  transition
+                "
+              >
+                Enviar
+              </button>
+            </form>
 
-                    )
-            }
-        </>
-    )
+            {errors.message && (
+              <p className="text-red-600 text-sm mt-1">
+                {errors.message.message}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  )
 }
 
 export default Chat
