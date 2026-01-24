@@ -92,14 +92,20 @@ const registrarProyecto = async (req, res) => {
         // Enviar correo al cliente (no bloquear la respuesta)
         // =============================
         // Disparar el envío de correo de forma asíncrona sin await
-        sendMailToOwner(emailCliente, passwordFinal)
-            .then(() => console.log('Correo de credenciales enviado (async)'))
-            .catch(err => console.error('Error enviando correo (async):', err))
+        try {
+        await sendMailToOwner(emailCliente, passwordFinal);
 
         res.status(201).json({
-            msg: "Proyecto registrado correctamente y correo enviado al cliente",
-            proyecto: nuevoProyecto
-        })
+            msg: "Proyecto registrado y correo enviado al cliente",
+        });
+        } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            msg: "El proyecto se creó, pero el correo NO pudo enviarse",
+        });
+        }
+
 
     } catch (error) {
         console.error(error)
