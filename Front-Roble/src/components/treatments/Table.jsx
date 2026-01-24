@@ -1,11 +1,22 @@
 import { MdDeleteForever, MdAttachMoney } from "react-icons/md"
 import storeAuth from "../../context/storeAuth"
+import ModalPayment from "./ModalPayment"
+import { Elements } from "@stripe/react-stripe-js"
+import { loadStripe } from "@stripe/stripe-js"
+import { useState } from "react"
+const stripePromise = loadStripe(import.meta.env.VITE_STRAPI_KEY)
+import { ToastContainer } from 'react-toastify'
+import storEstado from "../../context/storEstado"
 
 const TableTreatments = ({ treatments, onDelete }) => {
 
     const { rol } = storeAuth()
+    const { modal,toggleModal } = storEstado()
+    const [selectedTreatment,setSelectedTreatment] = useState(null)
 
     return (
+        <>
+            <ToastContainer/>
         <table className='w-full mt-5 table-auto shadow-lg bg-white'>
             <thead className='bg-gray-800 text-slate-400'>
                 <tr>
@@ -41,10 +52,20 @@ const TableTreatments = ({ treatments, onDelete }) => {
                         </td>
 
                         <td className='py-2 text-center'>
-                            <MdAttachMoney
-                                className="h-7 w-7 text-slate-800 cursor-pointer inline-block mr-2 hover:text-green-600"
-                                title="Pagar"
-                            />
+                            {rol === "cliente" && (
+                                    <MdAttachMoney
+                                        className={
+                                            treatment.estadoPago === "Pagado"
+                                            ? "h-7 w-7 text-gray-500 pointer-events-none inline-block mr-2"
+                                            : "h-7 w-7 text-slate-800 cursor-pointer inline-block mr-2 hover:text-green-600"
+                                        }
+                                        title="Pagar"
+                                        onClick={() => {
+                                            setSelectedTreatment(treatment)
+                                            toggleModal("payment")
+                                        }}
+                                    />
+                                )}
                             {
                                 rol !== "cliente" &&(
                                     <MdDeleteForever
@@ -65,6 +86,13 @@ const TableTreatments = ({ treatments, onDelete }) => {
                 ))}
             </tbody>
         </table>
+        {modal === "payment" && selectedTreatment && (
+                <Elements stripe={stripePromise}>
+                    <ModalPayment treatment={selectedTreatment} />
+                </Elements>
+            )}
+        
+        </>
     )
 }
 

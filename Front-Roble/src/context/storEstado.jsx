@@ -60,7 +60,22 @@ const storEstado = create((set) => ({
                 console.error(error)
             }
         }
+    },
+    payEstado: async (url, data) => {
+    try {
+        const respuesta = await axios.post(url, data, {
+            headers: getAuthHeaders()
+        })
+
+        set((state) => ({ modal: false }))
+        toast.success(respuesta.data.msg)
+
+    } catch (error) {
+        console.error(error.response?.data || error)
+        toast.error(error.response?.data?.msg || "Error al procesar el pago")
     }
+}
+
 }))
 
 export default storEstado
