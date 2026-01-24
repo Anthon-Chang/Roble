@@ -97,6 +97,11 @@ const Dashboard = () => {
                                             </Link>
                                         </li>
                                         )}
+                                    <li className='my-1'>
+                                        <Link to='/dashboard/chat' className={`${darkMode ? 'text-white hover:bg-gray-700' : 'text-slate-100 hover:bg-gray-900'} block px-3 py-2 rounded-md text-center`}>
+                                            chatear
+                                        </Link>
+                                    </li>
 
                                 </ul>
 

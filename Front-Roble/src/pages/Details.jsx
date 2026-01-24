@@ -153,7 +153,7 @@ const Details = () => {
 
 
                     {/* Apertura del modal tratamientos */}
-                    <p>Este módulo te permite gestionar tratamientos</p>
+                    <p>Este módulo te permite gestionar los pagos</p>
                     {rol !== "cliente" && (
                         <button className="px-5 py-2 bg-green-800 text-white rounded-lg hover:bg-green-700" onClick={()=>{toggleModal("treatments")}}>
                             Registrar

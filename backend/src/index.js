@@ -21,7 +21,10 @@ const server = http.createServer(app);
 // Socket.IO
 const io = new Server(server, {
   cors: {
-    origin: "https://rob1e.netlify.app",
+    origin: [
+      "http://localhost:5173",
+      "https://rob1e.netlify.app"
+    ],
     methods: ["GET", "POST"]
   }
 });
