@@ -1,4 +1,4 @@
-import { ToastContainer } from 'react-toastify'
+/* import { ToastContainer } from 'react-toastify' */
 import { MdDeleteForever, MdAttachMoney } from "react-icons/md"
 import storeAuth from "../../context/storeAuth"
 import ModalPayment from "./ModalPayment"
@@ -15,8 +15,8 @@ const TableTreatments = ({ treatments, onDelete }) => {
     const [selectedTreatment,setSelectedTreatment] = useState(null)
 
     return (
-        <>
-            <ToastContainer/>
+        <>  
+            {/* <ToastContainer/> */}
         <table className='w-full mt-5 table-auto shadow-lg bg-white'>
             <thead className='bg-gray-800 text-slate-400'>
                 <tr>
