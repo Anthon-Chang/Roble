@@ -46,6 +46,7 @@ const Chat = () => {
   }
 
   /* ------------------ SOCKET ------------------ */
+  /*"http://localhost:4000", */
   useEffect(() => {
     const newSocket = io("https://roble.onrender.com", {
       transports: ["websocket"],
