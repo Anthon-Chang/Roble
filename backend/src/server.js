@@ -18,7 +18,32 @@ dotenv.config()
 
 // Middlewares
 app.use(express.json())
-app.use(cors())
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "https://roble.netlify.app"
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Permite Postman / Thunder Client
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("CORS no permitido"));
+    }
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
+}));
+
+// 👇 MUY IMPORTANTE para preflight
+//app.options("*", cors());
+
 
 app.use(
     fileUpload({
