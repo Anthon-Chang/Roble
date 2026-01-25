@@ -22,7 +22,7 @@ app.use(express.json())
 
 app.use(cors({
   origin: process.env.NODE_ENV === "production"
-    ? "https://roble.netlify.app"
+    ? "https://rob1e.netlify.app"
     : true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
