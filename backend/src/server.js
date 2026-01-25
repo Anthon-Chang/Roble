@@ -19,27 +19,16 @@ dotenv.config()
 // Middlewares
 app.use(express.json())
 
-const allowedOrigins = [
-  "http://localhost:5173",
-  "http://localhost:3000",
-  "https://roble.netlify.app"
-];
 
 app.use(cors({
-  origin: function (origin, callback) {
-    // Permite Postman / Thunder Client
-    if (!origin) return callback(null, true);
-
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("CORS no permitido"));
-    }
-  },
+  origin: process.env.NODE_ENV === "production"
+    ? "https://roble.netlify.app"
+    : true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
 }));
+
 
 // 👇 MUY IMPORTANTE para preflight
 //app.options("*", cors());
