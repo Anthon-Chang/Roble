@@ -28,12 +28,13 @@ const registro = async (req, res) => {
         // Encriptar contraseña
         nuevoCarpintero.password = await nuevoCarpintero.encryptPassword(password)
 
-        // Crear token y enviar correo
         const token = nuevoCarpintero.createToken()
-        await sendMailToRegister(email, token)
-
         // Guardar
         await nuevoCarpintero.save()
+
+        // Crear token y enviar correo
+        console.log("BODY:", req.body)
+        await sendMailToRegister(email, token)
 
         res.status(201).json({ msg: "Revisa tu correo electrónico para confirmar tu cuenta" })
 
