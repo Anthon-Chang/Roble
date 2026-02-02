@@ -6,7 +6,8 @@ import { ToastContainer } from 'react-toastify'
 import { useForm } from 'react-hook-form'
 import storeAuth from "../context/storeAuth"
 import logo from '../../public/images/login_2.webp'
-
+import { GoogleLogin } from "@react-oauth/google";
+import axios from "axios";
 
 
 const Login = () => {
@@ -15,7 +16,26 @@ const Login = () => {
     const navigate = useNavigate()
     const { register, handleSubmit, formState: { errors } } = useForm()
     const  fetchDataBackend = useFetch()
-    const { setToken, setRol } = storeAuth()    
+    const { setToken, setRol } = storeAuth()
+    const loginGoogleSuccess = async (credentialResponse) => {
+    try {
+        const response = await axios.post(
+            `${import.meta.env.VITE_BACKEND_URL}/api/auth/google`,
+            {
+                credential: credentialResponse.credential
+            }
+        )
+
+        setToken(response.data.token)
+        setRol(response.data.rol)
+
+        navigate("/dashboard")
+
+    } catch (error) {
+        console.error(error)
+    }
+}
+    
 
     const loginUser = async(dataForm) => {
         let url = " "
@@ -117,10 +137,15 @@ const Login = () => {
             </div>
 
             {/* Google */}
-            <button className="w-full mt-5 flex items-center justify-center border py-2 rounded-xl text-sm hover:bg-[#bb4d00] hover:text-white">
-                <img className="w-5 mr-2" src="https://cdn-icons-png.flaticon.com/512/281/281764.png" />
-                Iniciar sesión con Google
-            </button>
+            <div className="w-full mt-5 flex justify-center">
+                <GoogleLogin
+                    onSuccess={loginGoogleSuccess}
+                    onError={() => {
+                        console.log("Error al iniciar sesión con Google")
+                    }}
+                />
+            </div>
+
 
             {/* Olvidaste tu contraseña */}
             <div className="mt-5 text-xs text-left">

@@ -51,7 +51,12 @@ const carpinteroSchema = new Schema({
     rol: {
         type: String,
         default: "carpintero"
-    }
+    },
+    provider: {
+  type: String,
+  enum: ["local", "google"],
+  default: "local",
+}
 }, {
     timestamps: true
 })

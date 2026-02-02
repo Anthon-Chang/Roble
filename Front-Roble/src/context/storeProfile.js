@@ -20,7 +20,11 @@ const storeProfile = create((set) => ({
    profile: async () => {
   try {
     const storedUser = JSON.parse(localStorage.getItem("auth-token"))
-    const rol = storedUser?.state?.rol
+
+    // 👇 ESTA LÍNEA ES LA CLAVE
+    if (!storedUser?.state?.token) return
+
+    const rol = storedUser.state.rol
 
     const endpoint =
       rol === "carpintero"
@@ -33,13 +37,15 @@ const storeProfile = create((set) => ({
     set({
       user: {
         ...respuesta.data,
-        rol, // 👈 solo para mostrar en pantalla
+        rol,
       },
     })
+
   } catch (error) {
     console.error(error)
   }
 },
+
 
 
 
