@@ -6,9 +6,11 @@ import Proyecto from "../models/Proyecto.js"
 // CREAR TOKEN
 // =============================
 const crearTokenJWT = (id, rol) => {
-  return jwt.sign({ id, rol }, process.env.JWT_SECRET, {
-    expiresIn: "1d",
-  })
+  return jwt.sign(
+    { id, rol },
+    process.env.JWT_SECRET,
+    { expiresIn: "1d" }
+  )
 }
 
 // =============================
@@ -31,21 +33,32 @@ const verificarTokenJWT = async (req, res, next) => {
 
     if (rol === "carpintero") {
       user = await Carpintero.findById(id).select("-password")
+      if (!user) {
+        return res.status(401).json({ msg: "Usuario no encontrado" })
+      }
+
+      // ✅ compatibilidad
+      req.carpinteroHeader = user
     } else {
       user = await Proyecto.findById(id).select("-passwordCliente")
+      if (!user) {
+        return res.status(401).json({ msg: "Usuario no encontrado" })
+      }
+
+      // ✅ compatibilidad
+      req.clienteHeader = user
     }
 
-    if (!user) {
-      return res.status(401).json({ msg: "Usuario no encontrado" })
-    }
-
+    // ✅ estándar nuevo
     req.user = user
     req.user.rol = rol
 
     next()
   } catch (error) {
     console.error(error)
-    return res.status(401).json({ msg: "Token inválido o expirado" })
+    return res.status(401).json({
+      msg: "Token inválido o expirado",
+    })
   }
 }
 

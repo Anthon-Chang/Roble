@@ -6,11 +6,7 @@ import { Server } from "socket.io";
 import cors from "cors";
 import { chatSocket } from "./sockets/chat.socket.js";
 
-// CORS (backend)
-app.use(cors({
-  origin: "https://rob1e.netlify.app",
-  methods: ["GET", "POST", "PUT", "DELETE"]
-}));
+
 
 // Conectar BD
 connectDB();
@@ -31,6 +27,7 @@ const io = new Server(server, {
 
 // Inicializar sockets
 chatSocket(io);
+
 
 // Levantar servidor
 server.listen(app.get("port"), () => {

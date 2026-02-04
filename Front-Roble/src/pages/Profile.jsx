@@ -6,11 +6,15 @@ import FormProfile from '../components/profile/FormProfile'
 import storeProfile from '../context/storeProfile'
 
 const Profile = () => {
-  const { user, profile } = storeProfile()
+  const { user } = storeProfile()
 
-  useEffect(() => {
-    profile()
-  }, [])
+  if (!user) {
+    return (
+      <p className="text-center text-gray-500">
+        Cargando perfil...
+      </p>
+    )
+  }
 
   return (
     <>
@@ -22,7 +26,7 @@ const Profile = () => {
         </p>
       </div>
 
-      {user?.rol === 'cliente' ? (
+      {user.rol === 'cliente' ? (
         <CardProfileOwner />
       ) : (
         <>

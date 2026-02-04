@@ -2,6 +2,7 @@ import { OAuth2Client } from "google-auth-library";
 import Carpintero from "../models/carpintero.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import { crearTokenJWT } from "../middlewares/JWT.js"
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -51,14 +52,10 @@ export const loginGoogle = async (req, res) => {
     confirmEmail: true,
     rol: "carpintero",
     provider: "google"
-});
+    });
     }
 
-    const token = jwt.sign(
-      { id: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+    const token = crearTokenJWT(user._id, user.rol)
 
     res.json({
       token,

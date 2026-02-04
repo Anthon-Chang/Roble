@@ -210,7 +210,7 @@ const login = async (req, res) => {
 // =============================
 const perfil = (req, res) => {
     try {
-        const { token, confirmEmail, createdAt, updatedAt, __v, ...datosPerfil } = req.carpinteroHeader
+        const { token, confirmEmail, createdAt, updatedAt, __v, ...datosPerfil } = req.user
         res.status(200).json(datosPerfil)
 
     } catch (error) {

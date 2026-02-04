@@ -21,7 +21,7 @@ const storeProfile = create((set) => ({
   try {
     const storedUser = JSON.parse(localStorage.getItem("auth-token"))
 
-    // 👇 ESTA LÍNEA ES LA CLAVE
+    //  ESTA LÍNEA ES LA CLAVE
     if (!storedUser?.state?.token) return
 
     const rol = storedUser.state.rol
@@ -33,6 +33,8 @@ const storeProfile = create((set) => ({
 
     const url = `${import.meta.env.VITE_BACKEND_URL}/${endpoint}`
     const respuesta = await axios.get(url, getAuthHeaders())
+
+    console.log(respuesta.data)
 
     set({
       user: {
