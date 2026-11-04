@@ -1,5 +1,5 @@
+import './config/env.js'
 import express from 'express'
-import dotenv from 'dotenv'
 import cors from 'cors'
 
 import routerCarpinteros from './routers/carpintero_routes.js'
@@ -8,13 +8,15 @@ import furnitureRoutes from './routers/furniture_routes.js';
 import model3dRoutes from "./routers/model3d_routes.js";
 import routerProyectos from './routers/proyecto_routes.js';
 import routerEstado from './routers/estado_routes.js';
+import routerAdmin from './routers/admin_routes.js';
+import routerCliente from './routers/cliente_routes.js';
+import routerMueble from './routers/mueble_routes.js';
 
 import fileUpload from "express-fileupload";
 
 import authGoogleRoutes from "./routers/authGoogle_routes.js";
 
 const app = express()
-dotenv.config()
 
 // Middlewares
 app.use(express.json())
@@ -38,6 +40,9 @@ app.use(
     fileUpload({
         useTempFiles: true,
         tempFileDir: "./uploads",
+        limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB (modelos 3D); cada tipo de archivo valida su propio límite
+        abortOnLimit: true,
+        limitHandler: (req, res) => res.status(413).json({ msg: "El archivo supera el tamaño máximo permitido" }),
     })
 );
 
@@ -103,8 +108,17 @@ app.get('/api/routes', (req, res) => {
 // Rutas de autenticación con Google
 app.use("/api/auth", authGoogleRoutes);
 
+// Rutas de administrador
+app.use('/api/admin', routerAdmin)
+
 // Rutas de carpinteros
 app.use('/api/carpintero', routerCarpinteros)
+
+// Rutas de clientes
+app.use('/api/cliente', routerCliente)
+
+// Rutas de mobiliario
+app.use('/api/mueble', routerMueble)
 
 // Rutas de proyectos
 app.use("/api/proyecto", routerProyectos)
@@ -120,8 +134,6 @@ app.use('/api/v1/furniture', furnitureRoutes)
 
 // Rutas de modelos 3D
 app.use("/api/models", model3dRoutes);
-//  Aquí debes ponerlo
-app.use("/uploads", express.static("uploads"));
 // Ruta no encontrada
 app.use((req, res) => res.status(404).send("Endpoint no encontrado - 404"))
 

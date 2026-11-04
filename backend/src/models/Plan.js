@@ -1,12 +1,13 @@
-import mongoose from "mongoose";
+import { crear, obtener, actualizar, eliminar, buscar } from "../helpers/firestore.js"
 
-const planSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  rooms: Number,
-  style: String,
-  area_m2: Number,
-  description: String,
-  image_url: { type: String, required: true },
-}, { timestamps: true });
+const COLECCION = "planos"
 
-export default mongoose.model("Plan", planSchema);
+export const Plan = {
+    crear: (datos) => crear(COLECCION, datos),
+    porId: (id) => obtener(COLECCION, id),
+    listar: () => buscar(COLECCION),
+    actualizar: (id, cambios) => actualizar(COLECCION, id, cambios),
+    eliminar: (id) => eliminar(COLECCION, id),
+}
+
+export default Plan

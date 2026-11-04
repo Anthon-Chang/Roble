@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { 
+import {
     registro,
     confirmarMail,
     recuperarPassword,
@@ -8,10 +8,15 @@ import {
     login,
     perfil,
     actualizarPerfil,
-    actualizarPassword
+    actualizarPassword,
+    subirCV,
+    verMiCV,
+    listarAprobados,
+    detalleAprobado
 } from '../controllers/carpintero_controller.js'
 
 import { verificarTokenJWT } from '../middlewares/JWT.js'
+import { permitirRoles } from '../middlewares/roles.js'
 
 const router = Router()
 
@@ -21,7 +26,6 @@ const router = Router()
 router.post('/registro', registro)
 router.get('/confirmar/:token', confirmarMail)
 
-
 // -------------------------------
 //  Recuperación de contraseña
 // -------------------------------
@@ -29,18 +33,25 @@ router.post('/recuperarpassword', recuperarPassword)
 router.get('/recuperarpassword/:token', comprobarTokenPassword)
 router.post('/nuevopassword/:token', crearNuevoPassword)
 
-
 // -------------------------------
 //  Autenticación
 // -------------------------------
 router.post('/login', login)
 
+// -------------------------------
+//  Rutas privadas del carpintero (requieren JWT)
+// -------------------------------
+router.get('/perfil', verificarTokenJWT, permitirRoles('carpintero'), perfil)
+router.put('/actualizarperfil/:id', verificarTokenJWT, permitirRoles('carpintero'), actualizarPerfil)
+router.put('/actualizarpassword/:id', verificarTokenJWT, permitirRoles('carpintero'), actualizarPassword)
 
-// -------------------------------
-//  Rutas privadas (requieren JWT)
-// -------------------------------
-router.get('/perfil', verificarTokenJWT, perfil)
-router.put('/actualizarperfil/:id', verificarTokenJWT, actualizarPerfil)
-router.put('/actualizarpassword/:id', verificarTokenJWT, actualizarPassword)
+// CV en PDF (HU-004): solo carpinteros
+router.get('/cv', verificarTokenJWT, permitirRoles('carpintero'), verMiCV)
+router.post('/cv', verificarTokenJWT, permitirRoles('carpintero'), subirCV)
+router.put('/cv', verificarTokenJWT, permitirRoles('carpintero'), subirCV)
+
+// Perfiles profesionales aprobados (HU-009): cualquier usuario autenticado
+router.get('/aprobados', verificarTokenJWT, listarAprobados)
+router.get('/aprobados/:id', verificarTokenJWT, detalleAprobado)
 
 export default router

@@ -1,46 +1,15 @@
-import mongoose, { Schema, model } from "mongoose"
+import { crear, obtener, actualizar, eliminar, buscar } from "../helpers/firestore.js"
 
-const estadoSchema = new Schema({
+const COLECCION = "estados"
 
-    nombre: {
-        type: String,
-        required: true,
-        trim: true
-    },
+export const PRIORIDADES = ["Baja", "Media", "Alta"]
 
-    detalle: {
-        type: String,
-        required: true,
-        trim: true
-    },
+export const Estado = {
+    crear: (datos) => crear(COLECCION, { estadoPago: "Pendiente", ...datos }),
+    porId: (id) => obtener(COLECCION, id),
+    porProyecto: (proyectoId) => buscar(COLECCION, { proyecto: proyectoId }),
+    actualizar: (id, cambios) => actualizar(COLECCION, id, cambios),
+    eliminar: (id) => eliminar(COLECCION, id),
+}
 
-    prioridad: {
-        type: String,
-        required: true,
-        enum: ["Baja", "Media", "Alta"]
-    },
-
-    precio: {
-        type: Number,
-        required: true,
-        min: 1
-    },
-
-    estadoPago: {
-        type: String,
-        enum: ["Pendiente", "Pagado"],
-        default: "Pendiente"
-    },
-
-    // 🔗 Relación con Proyecto
-    proyecto: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Proyecto",
-        required: true
-    }
-
-}, {
-    timestamps: true
-})
-
-export default model("Estado", estadoSchema)
+export default Estado

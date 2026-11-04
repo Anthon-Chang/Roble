@@ -1,0 +1,66 @@
+import "./env.js"
+import admin from "firebase-admin"
+
+let db = null
+let bucket = null
+
+const leerCredenciales = () => {
+    // Opción B: JSON completo de la cuenta de servicio (texto JSON o en base64)
+    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+        const bruto = process.env.FIREBASE_SERVICE_ACCOUNT.trim()
+        const texto = bruto.startsWith("{") ? bruto : Buffer.from(bruto, "base64").toString("utf8")
+        return JSON.parse(texto)
+    }
+
+    // Opción A: variables sueltas
+    const { FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY } = process.env
+    if (!FIREBASE_PROJECT_ID || !FIREBASE_CLIENT_EMAIL || !FIREBASE_PRIVATE_KEY) {
+        throw new Error(
+            "Faltan credenciales de Firebase: define FIREBASE_SERVICE_ACCOUNT o FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL y FIREBASE_PRIVATE_KEY"
+        )
+    }
+    return {
+        projectId: FIREBASE_PROJECT_ID,
+        clientEmail: FIREBASE_CLIENT_EMAIL,
+        privateKey: FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+    }
+}
+
+const inicializar = () => {
+    if (!admin.apps.length) {
+        admin.initializeApp({
+            credential: admin.credential.cert(leerCredenciales()),
+            storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+        })
+    }
+    db = admin.firestore()
+    db.settings({ ignoreUndefinedProperties: true })
+    bucket = admin.storage().bucket()
+}
+
+export const getDb = () => {
+    if (!db) inicializar()
+    return db
+}
+
+export const getBucket = () => {
+    if (!bucket) inicializar()
+    return bucket
+}
+
+// Verifica que Firestore responde; se usa al arrancar el servidor.
+export const conectarFirebase = async () => {
+    try {
+        await getDb().collection("_salud").limit(1).get()
+        console.log(`✅ Firebase conectado (Firestore y Storage: ${getBucket().name})`)
+    } catch (error) {
+        console.error("❌ Error al conectar con Firebase:", error.message)
+        process.exit(1)
+    }
+}
+
+// Solo para pruebas: permite inyectar un Firestore y un bucket simulados.
+export const __usarFirebaseSimulado = ({ db: dbSimulado, bucket: bucketSimulado }) => {
+    db = dbSimulado
+    bucket = bucketSimulado
+}

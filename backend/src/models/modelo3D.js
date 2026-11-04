@@ -1,12 +1,13 @@
-import mongoose from 'mongoose';
+import { crear, obtener, actualizar, eliminar, buscar } from "../helpers/firestore.js"
 
-const Model3DSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  description: { type: String },
-  modelUrl: { type: String, required: true }, // URL pública del GLB
-  createdAt: { type: Date, default: Date.now }
-});
+const COLECCION = "modelos3d"
 
-const Model3D = mongoose.model('Model3D', Model3DSchema);
+export const Model3D = {
+    crear: (datos) => crear(COLECCION, { description: "", modelPath: null, formato: null, ...datos }),
+    porId: (id) => obtener(COLECCION, id),
+    listar: (filtros = {}) => buscar(COLECCION, filtros),
+    actualizar: (id, cambios) => actualizar(COLECCION, id, cambios),
+    eliminar: (id) => eliminar(COLECCION, id),
+}
 
-export default Model3D;
+export default Model3D

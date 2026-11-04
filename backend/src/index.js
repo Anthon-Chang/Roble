@@ -1,15 +1,13 @@
+import "./config/env.js";
 import app from "./server.js";
-import { connectDB } from "./database.js";
+import { conectarFirebase } from "./config/firebase.js";
 
 import http from "http";
 import { Server } from "socket.io";
-import cors from "cors";
 import { chatSocket } from "./sockets/chat.socket.js";
 
-
-
-// Conectar BD
-connectDB();
+// Verificar la conexión con Firebase (Firestore y Storage)
+await conectarFirebase();
 
 // Crear servidor HTTP
 const server = http.createServer(app);
@@ -27,7 +25,6 @@ const io = new Server(server, {
 
 // Inicializar sockets
 chatSocket(io);
-
 
 // Levantar servidor
 server.listen(app.get("port"), () => {

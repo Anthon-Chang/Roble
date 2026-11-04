@@ -52,7 +52,11 @@ export const Form = ({project}) => {
         try {
             setModel3D(prev => ({ ...prev, loading: true }));
             const API_URL = import.meta.env.VITE_BACKEND_URL;
-            const response = await fetch(`${API_URL}/api/models/search?name=${encodeURIComponent(model3D.prompt)}`)
+            let token = ""
+            try { token = JSON.parse(localStorage.getItem("auth-token"))?.state?.token || "" } catch { /* sin sesión */ }
+            const response = await fetch(`${API_URL}/api/models/search?name=${encodeURIComponent(model3D.prompt)}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            })
             const data = await response.json()
             if (!data.data) {
                 toast.error("No se encontró un modelo 3D")

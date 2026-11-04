@@ -1,375 +1,329 @@
-import Proyecto from "../models/Proyecto.js"
-import { sendMailToOwner } from "../helpers/sendMail.js"
-import { subirBase64Cloudinary, subirImagenCloudinary } from "../helpers/uploadCloudinary.js"
-import mongoose from "mongoose"
-import cloudinary from "cloudinary"
-import fs from "fs-extra"
-import { crearTokenJWT } from "../middlewares/JWT.js"
+import Proyecto, { CAMPOS_EDITABLES } from "../models/Proyecto.js"
+import Cliente from "../models/Cliente.js"
+import Carpintero from "../models/carpintero.js"
 import Estado from "../models/Estado.js"
+import { sendMailToOwner } from "../helpers/sendMail.js"
+import { subirArchivo, subirBase64, eliminarArchivo } from "../helpers/storage.js"
+import { limpiarTemporales, validarImagen } from "../helpers/archivos.js"
+import { crearPasswordTemporal, emailValido, encryptPassword } from "../helpers/password.js"
+import { masRecientesPrimero } from "../helpers/firestore.js"
 
-// =====================================================
-// REGISTRAR PROYECTO
-// =====================================================
-const registrarProyecto = async (req, res) => {
-    try {
+const texto = (valor) => (typeof valor === "string" ? valor.trim() : "")
 
-        console.log('--- registrarProyecto request ---')
-        console.log('headers.authorization=', req.headers.authorization)
-        console.log('body keys=', Object.keys(req.body || {}))
-        try { console.log('body sample=', JSON.stringify(req.body).slice(0,200)) } catch(e) {}
-        console.log('files keys=', Object.keys(req.files || {}))
+// Valida la fecha de entrega: debe ser una fecha válida y no estar en el pasado.
+const leerFechaEntrega = (valor) => {
+    const fecha = new Date(valor)
+    if (Number.isNaN(fecha.getTime())) return { error: "La fecha de entrega no es válida" }
+    const hoy = new Date()
+    hoy.setHours(0, 0, 0, 0)
+    if (fecha < hoy) return { error: "La fecha de entrega no puede estar en el pasado" }
+    return { fecha }
+}
 
-        // Validar campos requeridos (evitar forzar que campos opcionales estén presentes)
-        const requiredFields = [
-            "nombreCliente",
-            "cedulaCliente",
-            "emailCliente",
-            "celularCliente",
-            "nombreProyecto",
-            "descripcionProyecto",
-            "fechaEntrega",
-        ]
-
-        for (const field of requiredFields) {
-            if (req.body[field] === undefined || req.body[field] === "") {
-                console.log(`Missing field detected: ${field}`, { value: req.body[field] })
-                console.log('Full req.body sample:', JSON.stringify(req.body).slice(0,400))
-                return res.status(400).json({ msg: `Debes llenar el campo ${field}` })
-            }
-        }
-
-        const { emailCliente } = req.body
-
-        // Validar si el email ya está registrado
-        const proyectoExistente = await Proyecto.findOne({ emailCliente })
-        if (proyectoExistente)
-            return res.status(400).json({ msg: "El email ya se encuentra registrado" })
-
-        // Generar password temporal para el cliente
-        const passwordTemp = Math.random().toString(36).toUpperCase().slice(2, 6)
-        const passwordFinal = "CLI" + passwordTemp
-
-        const {
-        imagenProyecto,
-        imagenProyectoIA,
-        ...bodyLimpio
-        } = req.body
-
-        // Crear el proyecto con el password cifrado
-        const nuevoProyecto = new Proyecto({
-            ...bodyLimpio,
-            passwordCliente: await Proyecto.prototype.encryptPassword(passwordFinal),
-            carpintero: req.carpinteroHeader._id   
-        })
-
-        // =============================
-        // Subir imagen física (multer)
-        // =============================
-        if (req.files?.imagenProyecto) {
-            const { secure_url, public_id } = await subirImagenCloudinary(
-                req.files.imagenProyecto.tempFilePath,
-                "Proyectos"
-            )
-
-            nuevoProyecto.imagenProyecto = secure_url
-            nuevoProyecto.imagenProyectoID = public_id
-        }
-
-        // =============================
-        // Subir imagen IA (base64)
-        // =============================
-        if (req.body?.imagenProyectoIA) {
-            const secure_url = await subirBase64Cloudinary(
-                req.body.imagenProyectoIA,
-                "Proyectos"
-            )
-            nuevoProyecto.imagenProyectoIA = secure_url
-        }
-
-        await nuevoProyecto.save()
-
-        // =============================
-        // Enviar correo al cliente (no bloquear la respuesta)
-        // =============================
-        // Disparar el envío de correo de forma asíncrona sin await
+// Sube la imagen física (multipart) y/o la imagen generada con IA (base64). Devuelve los campos a guardar.
+const procesarImagenes = async (req) => {
+    const campos = {}
+    const archivo = req.files?.imagenProyecto
+    if (archivo) {
+        if (Array.isArray(archivo)) throw Object.assign(new Error("Sube una sola imagen en 'imagenProyecto'"), { codigo: 400 })
+        const error = await validarImagen(archivo)
+        if (error) throw Object.assign(new Error(error), { codigo: 400 })
+        const { url, path } = await subirArchivo(archivo, "proyectos")
+        campos.imagenProyecto = url
+        campos.imagenProyectoPath = path
+    }
+    if (typeof req.body.imagenProyectoIA === "string" && req.body.imagenProyectoIA.startsWith("data:image")) {
         try {
-        await sendMailToOwner(emailCliente, passwordFinal);
-
-        res.status(201).json({
-            msg: "Proyecto registrado y correo enviado al cliente",
-        });
+            const { url, path } = await subirBase64(req.body.imagenProyectoIA, "proyectos")
+            campos.imagenProyectoIA = url
+            campos.imagenProyectoIAPath = path
         } catch (error) {
-        console.error(error);
-
-        res.status(500).json({
-            msg: "El proyecto se creó, pero el correo NO pudo enviarse",
-        });
+            await eliminarArchivo(campos.imagenProyectoPath)
+            throw Object.assign(error, { codigo: 400 })
         }
+    }
+    return campos
+}
 
+const borrarImagenes = (campos) =>
+    Promise.all([eliminarArchivo(campos.imagenProyectoPath), eliminarArchivo(campos.imagenProyectoIAPath)])
 
-    } catch (error) {
-        console.error(error)
-        res.status(500).json({ msg: `❌ Error en el servidor - ${error}` })
+const responderError = (res, error) => {
+    if (error.codigo === 400) return res.status(400).json({ msg: error.message })
+    console.error(error)
+    return res.status(500).json({ msg: `❌ Error en el servidor - ${error.message}` })
+}
+
+// Quita campos internos y reemplaza el id del carpintero por un resumen (equivale al populate de Mongoose).
+const presentarProyectos = async (proyectos) => {
+    const ids = [...new Set(proyectos.map((p) => p.carpintero).filter(Boolean))]
+    const carpinteros = new Map()
+    await Promise.all(
+        ids.map(async (id) => {
+            const c = await Carpintero.porId(id)
+            if (c) carpinteros.set(id, { _id: c._id, nombre: c.nombre, apellido: c.apellido })
+        })
+    )
+    return proyectos.map(({ imagenProyectoPath, imagenProyectoIAPath, ...resto }) => ({
+        ...resto,
+        carpintero: carpinteros.get(resto.carpintero) || { _id: resto.carpintero },
+    }))
+}
+
+// Datos denormalizados del cliente que se copian al proyecto (el frontend los muestra directamente).
+const datosCliente = (cliente) => ({
+    cliente: cliente._id,
+    nombreCliente: `${cliente.nombre} ${cliente.apellido}`.trim(),
+    cedulaCliente: cliente.cedula || "",
+    emailCliente: cliente.email,
+    celularCliente: cliente.celular || "",
+})
+
+// Campos del proyecto comunes a las dos formas de crearlo
+const leerDatosProyecto = (body) => {
+    for (const campo of ["nombreProyecto", "descripcionProyecto", "fechaEntrega"]) {
+        if (!texto(body[campo])) return { error: `Debes llenar el campo ${campo}` }
+    }
+    const { fecha, error } = leerFechaEntrega(body.fechaEntrega)
+    if (error) return { error }
+    return {
+        datos: {
+            nombreProyecto: texto(body.nombreProyecto),
+            descripcionProyecto: texto(body.descripcionProyecto),
+            tipoMadera: texto(body.tipoMadera) || null,
+            fechaEntrega: fecha,
+        },
     }
 }
 
 // =====================================================
-// LISTAR PROYECTOS ACTIVOS DEL CARPINTERO
+// GENERAR PROYECTO COMO CLIENTE (HU-010)
+// El cliente elige un carpintero aprobado; el pedido le llega como requerimiento.
 // =====================================================
-export const listarProyectos = async (req, res) => {
+const solicitarProyecto = async (req, res) => {
+    let imagenes = {}
     try {
-        let proyectos;
+        const { datos, error } = leerDatosProyecto(req.body)
+        if (error) return res.status(400).json({ msg: error })
 
-        if (req.carpinteroHeader) {
-            // Si es carpintero, devuelve proyectos asignados a él
-            proyectos = await Proyecto.find({
-                estadoProyecto: true,
-                carpintero: req.carpinteroHeader._id
-            })
-            .select("-passwordCliente -__v")
-            .populate("carpintero", "_id nombre apellido");
-
-        } else if (req.clienteHeader) {
-            // Si es cliente, devuelve sus proyectos
-            proyectos = await Proyecto.find({
-                estadoProyecto: true,
-                emailCliente: req.clienteHeader.emailCliente
-            })
-            .select("-passwordCliente -__v")
-            .populate("carpintero", "_id nombre apellido");
-        } else {
-            return res.status(401).json({ msg: "Usuario no autorizado" });
+        const carpintero = await Carpintero.porId(texto(req.body.carpintero))
+        if (!carpintero || carpintero.estadoAprobacion !== "aprobado") {
+            return res.status(400).json({ msg: "El carpintero no existe o no está aprobado" })
         }
 
-        if (!proyectos || proyectos.length === 0) {
-            return res.status(404).json({ msg: "No hay proyectos disponibles" });
-        }
+        imagenes = await procesarImagenes(req)
+        const proyecto = await Proyecto.crear({
+            ...datos,
+            ...imagenes,
+            ...datosCliente(req.user),
+            carpintero: carpintero._id,
+        })
 
-        res.status(200).json(proyectos);
-
+        res.status(201).json({ msg: "Proyecto generado correctamente", proyecto: (await presentarProyectos([proyecto]))[0] })
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ msg: `❌ Error en el servidor - ${error}` });
+        await borrarImagenes(imagenes)
+        responderError(res, error)
+    } finally {
+        await limpiarTemporales(req.files)
     }
-};
+}
 
+// =====================================================
+// REGISTRAR PROYECTO COMO CARPINTERO (flujo existente del frontend)
+// Crea la cuenta del cliente si no existe y le envía una contraseña temporal.
+// =====================================================
+const registrarProyecto = async (req, res) => {
+    let imagenes = {}
+    try {
+        for (const campo of ["nombreCliente", "cedulaCliente", "emailCliente", "celularCliente"]) {
+            if (!texto(req.body[campo])) return res.status(400).json({ msg: `Debes llenar el campo ${campo}` })
+        }
+        const { datos, error } = leerDatosProyecto(req.body)
+        if (error) return res.status(400).json({ msg: error })
+        if (!emailValido(req.body.emailCliente)) {
+            return res.status(400).json({ msg: "El formato del correo del cliente no es válido" })
+        }
+
+        // Cliente existente o nuevo con contraseña temporal
+        let cliente = await Cliente.porEmail(req.body.emailCliente)
+        let passwordTemporal = null
+        if (!cliente) {
+            const [nombre, ...resto] = texto(req.body.nombreCliente).split(/\s+/)
+            passwordTemporal = crearPasswordTemporal()
+            cliente = await Cliente.crear({
+                nombre,
+                apellido: resto.join(" "),
+                cedula: texto(req.body.cedulaCliente),
+                celular: texto(req.body.celularCliente),
+                email: req.body.emailCliente,
+                password: await encryptPassword(passwordTemporal),
+                passwordTemporal: true,
+            })
+        }
+
+        imagenes = await procesarImagenes(req)
+        await Proyecto.crear({
+            ...datos,
+            ...imagenes,
+            ...datosCliente(cliente),
+            // Se conservan los datos que escribió el carpintero para este proyecto
+            nombreCliente: texto(req.body.nombreCliente),
+            cedulaCliente: texto(req.body.cedulaCliente),
+            celularCliente: texto(req.body.celularCliente),
+            carpintero: req.user._id,
+        })
+
+        if (passwordTemporal) {
+            try {
+                await sendMailToOwner(cliente.email, passwordTemporal)
+            } catch (errorCorreo) {
+                console.error("❌ No se pudo enviar el correo al cliente:", errorCorreo.message)
+                return res.status(201).json({ msg: "El proyecto se creó, pero el correo NO pudo enviarse" })
+            }
+            return res.status(201).json({ msg: "Proyecto registrado y correo enviado al cliente" })
+        }
+        res.status(201).json({ msg: "Proyecto registrado para un cliente ya existente" })
+    } catch (error) {
+        await borrarImagenes(imagenes)
+        responderError(res, error)
+    } finally {
+        await limpiarTemporales(req.files)
+    }
+}
+
+const consultaPorRol = (user) => {
+    if (user.rol === "carpintero") return { carpintero: user._id, estadoProyecto: true }
+    if (user.rol === "cliente") return { cliente: user._id, estadoProyecto: true }
+    return { estadoProyecto: true } // administrador
+}
+
+// =====================================================
+// LISTAR PROYECTOS ACTIVOS (carpintero: los suyos; cliente: los suyos)
+// =====================================================
+const listarProyectos = async (req, res) => {
+    try {
+        const proyectos = masRecientesPrimero(await Proyecto.listar(consultaPorRol(req.user)))
+        if (proyectos.length === 0) {
+            return res.status(404).json({ msg: "No hay proyectos disponibles" })
+        }
+        res.status(200).json(await presentarProyectos(proyectos))
+    } catch (error) {
+        responderError(res, error)
+    }
+}
+
+// =====================================================
+// REQUERIMIENTOS DE PEDIDO DEL CARPINTERO (HU-011)
+// Lista vacía (200) si aún no tiene pedidos asignados.
+// =====================================================
+const listarRequerimientos = async (req, res) => {
+    try {
+        const proyectos = masRecientesPrimero(await Proyecto.listar(consultaPorRol(req.user)))
+        res.status(200).json(await presentarProyectos(proyectos))
+    } catch (error) {
+        responderError(res, error)
+    }
+}
 
 // =====================================================
 // DETALLE DE UN PROYECTO
 // =====================================================
 const detalleProyecto = async (req, res) => {
     try {
-        const { id } = req.params;
+        const proyecto = await Proyecto.porId(req.params.id)
+        if (!proyecto) return res.status(404).json({ msg: "Proyecto no encontrado" })
 
-        if (!mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(404).json({ msg: `No existe el proyecto con id ${id}` });
-        }
+        const { rol, _id } = req.user
+        const permitido =
+            rol === "administrador" ||
+            (rol === "carpintero" && proyecto.carpintero === _id) ||
+            (rol === "cliente" && proyecto.cliente === _id)
+        if (!permitido) return res.status(403).json({ msg: "Acción no permitida" })
 
-        const proyecto = await Proyecto.findById(id)
-            .populate("carpintero", "_id nombre apellido");
+        const estados = (await Estado.porProyecto(proyecto._id))
+            .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+            .map(({ createdAt, updatedAt, ...resto }) => resto)
 
-        if (!proyecto) {
-            return res.status(404).json({ msg: "Proyecto no encontrado" });
-        }
-
-        // 🔹 Validar acceso según rol
-        if (req.carpinteroHeader) {
-            // Solo los carpinteros tienen carpinteroHeader
-            if (proyecto.carpintero._id.toString() !== req.carpinteroHeader._id.toString()) {
-                return res.status(403).json({ msg: "Acción no permitida" });
-            }
-        } else if (req.proyectoHeader) {
-            // Si es un cliente, opcional: validar que el proyecto sea suyo
-            if (proyecto._id.toString() !== req.proyectoHeader._id.toString()) {
-                return res.status(403).json({ msg: "Acción no permitida" });
-            }
-        }
-
-        // Buscar estados del proyecto
-        const estados = await Estado.find()
-            .where("proyecto")
-            .equals(id)
-            .select("-createdAt -updatedAt -__v");
-
-        proyecto.estados = estados;
-
-        res.status(200).json(proyecto);
-
+        const [presentado] = await presentarProyectos([proyecto])
+        res.status(200).json({ ...presentado, estados })
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ msg: `❌ Error en el servidor - ${error}` });
+        responderError(res, error)
     }
-};
+}
 
-
+// Carga el proyecto y verifica que pertenezca al carpintero autenticado.
+const proyectoDelCarpintero = async (req, res) => {
+    const proyecto = await Proyecto.porId(req.params.id)
+    if (!proyecto) {
+        res.status(404).json({ msg: "Proyecto no encontrado" })
+        return null
+    }
+    if (proyecto.carpintero !== req.user._id) {
+        res.status(403).json({ msg: "Acción no permitida" })
+        return null
+    }
+    return proyecto
+}
 
 // =====================================================
 // ELIMINAR (LÓGICO) PROYECTO
 // =====================================================
 const eliminarProyecto = async (req, res) => {
     try {
-        const { id } = req.params
+        const proyecto = await proyectoDelCarpintero(req, res)
+        if (!proyecto) return
 
-        // Validar ObjectId
-        if (!mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(404).json({ msg: `No existe el proyecto ${id}` })
-        }
-
-        const proyecto = await Proyecto.findById(id)
-
-        // Proyecto no existe
-        if (!proyecto) {
-            return res.status(404).json({ msg: "Proyecto no encontrado" })
-        }
-
-        // Validar pertenencia al carpintero
-        if (proyecto.carpintero.toString() !== req.carpinteroHeader._id.toString()) {
-            return res.status(403).json({ msg: "Acción no permitida" })
-        }
-
-        // Eliminado lógico
-        proyecto.estadoProyecto = false
-        await proyecto.save()
-
-        res.status(200).json({ msg: "Fecha de entrega registrado exitosamente" })
-
+        await Proyecto.actualizar(proyecto._id, { estadoProyecto: false })
+        res.status(200).json({ msg: "Proyecto eliminado exitosamente" })
     } catch (error) {
-        console.error(error)
-        res.status(500).json({ msg: `❌ Error en el servidor - ${error}` })
+        responderError(res, error)
     }
 }
 
 // =====================================================
 // ACTUALIZAR PROYECTO
+// Solo se aplican los campos permitidos; nunca el cliente, el carpintero ni credenciales.
 // =====================================================
 const actualizarProyecto = async (req, res) => {
+    let imagenes = {}
     try {
-        const { id } = req.params
+        const proyecto = await proyectoDelCarpintero(req, res)
+        if (!proyecto) return
 
-        // Validaciones: comprobar sólo los campos requeridos para actualizar
-        const requiredUpdateFields = [
-            "nombreCliente",
-            "cedulaCliente",
-            "emailCliente",
-            "celularCliente",
-            "nombreProyecto",
-            "descripcionProyecto",
-            "fechaEntrega",
-        ]
-
-        for (const field of requiredUpdateFields) {
-            if (req.body[field] === undefined || req.body[field] === "") {
-                console.log(`Missing update field: ${field}`, { value: req.body[field] })
-                return res.status(400).json({ msg: `Debes llenar el campo ${field}` })
-            }
+        const cambios = {}
+        for (const campo of CAMPOS_EDITABLES) {
+            if (req.body[campo] === undefined) continue
+            if (!texto(req.body[campo])) return res.status(400).json({ msg: `Debes llenar el campo ${campo}` })
+            cambios[campo] = texto(req.body[campo])
+        }
+        if (cambios.fechaEntrega !== undefined) {
+            const { fecha, error } = leerFechaEntrega(cambios.fechaEntrega)
+            if (error) return res.status(400).json({ msg: error })
+            cambios.fechaEntrega = fecha
         }
 
-        if (!mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(404).json({ msg: `No existe el proyecto ${id}` })
-        }
+        imagenes = await procesarImagenes(req)
+        const actualizado = await Proyecto.actualizar(proyecto._id, { ...cambios, ...imagenes })
 
-        const proyecto = await Proyecto.findById(id)
+        // Se borran las imágenes anteriores solo cuando la actualización ya se guardó
+        if (imagenes.imagenProyectoPath) await eliminarArchivo(proyecto.imagenProyectoPath)
+        if (imagenes.imagenProyectoIAPath) await eliminarArchivo(proyecto.imagenProyectoIAPath)
 
-        if (!proyecto) {
-            return res.status(404).json({ msg: "Proyecto no encontrado" })
-        }
-
-        // Validar pertenencia
-        if (proyecto.carpintero.toString() !== req.carpinteroHeader._id.toString()) {
-            return res.status(403).json({ msg: "Acción no permitida" })
-        }
-
-        // =============================
-        // Actualizar imagen física
-        // =============================
-        if (req.files?.imagenProyecto) {
-
-            // Eliminar imagen anterior
-            if (proyecto.imagenProyectoID) {
-                await cloudinary.uploader.destroy(proyecto.imagenProyectoID)
-            }
-
-            // Subir nueva imagen
-            const cloudiResponse = await cloudinary.uploader.upload(
-                req.files.imagenProyecto.tempFilePath,
-                { folder: "Proyectos" }
-            )
-
-            req.body.imagenProyecto = cloudiResponse.secure_url
-            req.body.imagenProyectoID = cloudiResponse.public_id
-
-            await fs.unlink(req.files.imagenProyecto.tempFilePath)
-        }
-
-        await Proyecto.findByIdAndUpdate(id, req.body, { new: true })
-
-        res.status(200).json({ msg: "Proyecto actualizado correctamente" })
-
+        res.status(200).json({ msg: "Proyecto actualizado correctamente", proyecto: (await presentarProyectos([actualizado]))[0] })
     } catch (error) {
-        console.error(error)
-        res.status(500).json({ msg: `❌ Error en el servidor - ${error}` })
+        await borrarImagenes(imagenes)
+        responderError(res, error)
+    } finally {
+        await limpiarTemporales(req.files)
     }
 }
-
-// =====================================================
-// LOGIN CLIENTE 
-// =====================================================
-const loginClienteProyecto = async (req, res) => {
-    try {
-        const { emailCliente, passwordCliente } = req.body
-
-        if (!emailCliente || !passwordCliente) {
-            return res.status(400).json({ msg: "Debes llenar todos los campos" })
-        }
-
-        const proyectoBDD = await Proyecto.findOne({ emailCliente })
-        if (!proyectoBDD) {
-            return res.status(404).json({ msg: "El cliente no se encuentra registrado" })
-        }
-
-        if (!proyectoBDD.passwordCliente) {
-            return res.status(500).json({ msg: "Error interno: password no definido" })
-        }
-
-        const verificarPassword = await proyectoBDD.matchPassword(passwordCliente)
-        if (!verificarPassword) {
-            return res.status(401).json({ msg: "El password no es correcto" })
-        }
-
-        const token = crearTokenJWT(proyectoBDD._id, "cliente")
-
-        res.status(200).json({
-            token,
-            rol: "cliente",
-            _id: proyectoBDD._id
-        })
-
-    } catch (error) {
-        console.error(error)
-        res.status(500).json({ msg: `❌ Error en el servidor - ${error.message}` })
-    }
-}
-
-// =====================================================
-// PERFIL CLIENTE
-// =====================================================
-export const perfilClienteProyecto = async (req, res) => {
-    try {
-        // Devuelve los datos del cliente que ya fueron obtenidos en el middleware
-        res.json(req.clienteHeader);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ msg: "Error del servidor" });
-    }
-};
-
 
 export {
     registrarProyecto,
-    /* listarProyectos, */
+    solicitarProyecto,
+    listarProyectos,
+    listarRequerimientos,
     detalleProyecto,
     eliminarProyecto,
     actualizarProyecto,
-    loginClienteProyecto
-    /* perfilClienteProyecto */
 }

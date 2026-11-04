@@ -1,22 +1,15 @@
 import { Router } from "express"
 import { registrarEstado, eliminarEstado, pagarEstado } from "../controllers/estado_controller.js"
 import { verificarTokenJWT } from "../middlewares/JWT.js"
+import { permitirRoles } from "../middlewares/roles.js"
 
 const router = Router()
 
-// ===============================
-// REGISTRAR ESTADO DE UN PROYECTO
-// ===============================
-router.post("/registro", verificarTokenJWT, registrarEstado)
+// Registrar y eliminar estados: solo el carpintero dueño del proyecto
+router.post("/registro", verificarTokenJWT, permitirRoles("carpintero"), registrarEstado)
+router.delete("/eliminar/:id", verificarTokenJWT, permitirRoles("carpintero"), eliminarEstado)
 
-// ===============================
-// ELIMINAR ESTADO DE UN PROYECTO
-// ===============================
-router.delete("/eliminar/:id", verificarTokenJWT, eliminarEstado)
-
-// ===============================
-// PAGAR ESTADO DE UN PROYECTO
-// ===============================
-router.post("/pagar", verificarTokenJWT, pagarEstado)
+// Pagar un estado: solo el cliente dueño del proyecto
+router.post("/pagar", verificarTokenJWT, permitirRoles("cliente"), pagarEstado)
 
 export default router

@@ -1,9 +1,29 @@
-import { Router } from "express";
-import { getAllModels, createModel, searchModelByName } from "../controllers/model3d_controller.js";
+import { Router } from "express"
+import {
+    getAllModels,
+    getModelById,
+    getMyModels,
+    searchModelByName,
+    createModel,
+    updateModel,
+    deleteModel,
+} from "../controllers/model3d_controller.js"
+import { verificarTokenJWT } from "../middlewares/JWT.js"
+import { carpinteroAprobado } from "../middlewares/roles.js"
 
-const router = Router();
+const router = Router()
 
-router.get("/", getAllModels);     // Obtener todos
-router.post("/", createModel);     // Crear nuevo
-router.get("/search", searchModelByName);
-export default router;
+router.use(verificarTokenJWT)
+
+// Exploración del catálogo (HU-008): cualquier usuario autenticado
+router.get("/", getAllModels)
+router.get("/search", searchModelByName)
+router.get("/mis-modelos", carpinteroAprobado, getMyModels)
+router.get("/:id", getModelById)
+
+// Gestión del catálogo (HU-007): solo carpinteros aprobados, sobre sus propios modelos
+router.post("/", carpinteroAprobado, createModel)
+router.put("/:id", carpinteroAprobado, updateModel)
+router.delete("/:id", carpinteroAprobado, deleteModel)
+
+export default router
