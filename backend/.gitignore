@@ -22,3 +22,16 @@ build/
 .vscode/
 # Ignorar carpeta tmp del backend
 backend/tmp/
+
+# Variables de entorno (nunca versionar)
+.env
+.env.*
+!.env.example
+
+# Archivos temporales de subida
+uploads/*
+!uploads/.gitkeep
+
+# Credenciales de Firebase
+*firebase-adminsdk*.json
+serviceAccount*.json

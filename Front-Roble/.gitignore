@@ -3,3 +3,8 @@ dist/
 build/
 .env.local
 .env.development
+
+# Variables de entorno
+.env
+.env.*
+!.env.example
