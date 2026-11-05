@@ -1,5 +1,7 @@
 import "./env.js"
-import admin from "firebase-admin"
+import { initializeApp, getApps, getApp, cert } from "firebase-admin/app"
+import { getFirestore } from "firebase-admin/firestore"
+import { getStorage } from "firebase-admin/storage"
 
 let db = null
 let bucket = null
@@ -27,25 +29,25 @@ const leerCredenciales = () => {
 }
 
 const inicializar = () => {
-    if (!admin.apps.length) {
+    if (!getApps().length) {
         // Con los emuladores de Firebase no se necesitan credenciales reales.
         const usaEmulador = Boolean(process.env.FIRESTORE_EMULATOR_HOST)
-        admin.initializeApp(
+        initializeApp(
             usaEmulador
                 ? {
                       projectId: process.env.FIREBASE_PROJECT_ID || "demo-roble",
                       storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "demo-roble.appspot.com",
                   }
                 : {
-                      credential: admin.credential.cert(leerCredenciales()),
+                      credential: cert(leerCredenciales()),
                       storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
                   }
         )
         if (usaEmulador) console.log(`🧪 Usando emuladores de Firebase (Firestore ${process.env.FIRESTORE_EMULATOR_HOST})`)
     }
-    db = admin.firestore()
+    db = getFirestore(getApp())
     db.settings({ ignoreUndefinedProperties: true })
-    bucket = admin.storage().bucket()
+    bucket = getStorage(getApp()).bucket()
 }
 
 export const getDb = () => {
