@@ -3,8 +3,12 @@ import fs from "fs-extra"
 import { getBucket } from "../config/firebase.js"
 
 // URL pública con token de descarga (funciona aunque el bucket tenga acceso uniforme).
-const construirUrl = (bucket, ruta, token) =>
-    `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(ruta)}?alt=media&token=${token}`
+const construirUrl = (bucket, ruta, token) => {
+    // Con el emulador de Storage la URL apunta al servidor local
+    const emulador = process.env.FIREBASE_STORAGE_EMULATOR_HOST
+    const origen = emulador ? `http://${emulador}` : "https://firebasestorage.googleapis.com"
+    return `${origen}/v0/b/${bucket.name}/o/${encodeURIComponent(ruta)}?alt=media&token=${token}`
+}
 
 const rutaUnica = (carpeta, nombreOriginal = "archivo") => {
     const limpio = String(nombreOriginal).replace(/[^a-zA-Z0-9._-]/g, "_").slice(-80)

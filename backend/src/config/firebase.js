@@ -28,10 +28,20 @@ const leerCredenciales = () => {
 
 const inicializar = () => {
     if (!admin.apps.length) {
-        admin.initializeApp({
-            credential: admin.credential.cert(leerCredenciales()),
-            storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
-        })
+        // Con los emuladores de Firebase no se necesitan credenciales reales.
+        const usaEmulador = Boolean(process.env.FIRESTORE_EMULATOR_HOST)
+        admin.initializeApp(
+            usaEmulador
+                ? {
+                      projectId: process.env.FIREBASE_PROJECT_ID || "demo-roble",
+                      storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "demo-roble.appspot.com",
+                  }
+                : {
+                      credential: admin.credential.cert(leerCredenciales()),
+                      storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+                  }
+        )
+        if (usaEmulador) console.log(`🧪 Usando emuladores de Firebase (Firestore ${process.env.FIRESTORE_EMULATOR_HOST})`)
     }
     db = admin.firestore()
     db.settings({ ignoreUndefinedProperties: true })
