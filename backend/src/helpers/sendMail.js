@@ -1,6 +1,4 @@
-import resend from "../config/resend.js"
-
-const REMITENTE = "ROBLE <onboarding@resend.dev>" // Cambia por tu dominio verificado en producción
+import { enviar } from "../config/mailer.js"
 
 const escaparHtml = (texto) =>
   String(texto ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]))
@@ -9,8 +7,8 @@ const escaparHtml = (texto) =>
 // ENVÍO DE CORREO PARA REGISTRO
 // =====================================
 const sendMailToRegister = async (userMail, token) => {
-  return await resend.emails.send({
-    from: REMITENTE,
+  return await enviar({
+    enviar,
     to: [userMail],
     subject: "Bienvenido a ROBLE 🪚🧰",
     html: `
@@ -29,8 +27,8 @@ const sendMailToRegister = async (userMail, token) => {
 // ENVÍO DE CORREO PARA RECUPERAR PASSWORD
 // =====================================
 const sendMailToRecoveryPassword = async (userMail, token) => {
-  return await resend.emails.send({
-    from: REMITENTE,
+  return await enviar({
+    enviar,
     to: [userMail],
     subject: "Recupera tu contraseña - ROBLE",
     html: `
@@ -49,8 +47,8 @@ const sendMailToRecoveryPassword = async (userMail, token) => {
 // ENVÍO DE CORREO CON CREDENCIALES PARA CLIENTE
 // =====================================
 const sendMailToOwner = async (userMail, password) => {
-  return await resend.emails.send({
-    from: REMITENTE,
+  return await enviar({
+    enviar,
     to: [userMail],
     subject: "Bienvenido a ROBLE - Tus credenciales de acceso",
     html: `
@@ -73,8 +71,8 @@ const sendMailToOwner = async (userMail, password) => {
 // =====================================
 const sendMailEstadoPerfil = async (userMail, estado, motivo) => {
   const aprobado = estado === "aprobado"
-  return await resend.emails.send({
-    from: REMITENTE,
+  return await enviar({
+    enviar,
     to: [userMail],
     subject: aprobado ? "Tu perfil fue aprobado - ROBLE" : "Tu perfil fue rechazado - ROBLE",
     html: aprobado
@@ -92,8 +90,8 @@ const sendMailEstadoPerfil = async (userMail, estado, motivo) => {
 // AVISO AL ADMINISTRADOR: NUEVO CV POR REVISAR (HU-004)
 // =====================================
 const sendMailNuevoCV = async (adminMail, nombreCarpintero) => {
-  return await resend.emails.send({
-    from: REMITENTE,
+  return await enviar({
+    enviar,
     to: [adminMail],
     subject: "Nuevo CV pendiente de revisión - ROBLE",
     html: `
