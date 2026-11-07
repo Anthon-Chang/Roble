@@ -9,6 +9,7 @@ const transporter = nodemailer.createTransport({
     user: process.env.GMAIL_USER,
     pass: process.env.GMAIL_PASS,
   },
+  tls: { rejectUnauthorized: process.env.NODE_ENV === "production" },
 })
 
 export const REMITENTE = `"ROBLE" <${process.env.GMAIL_USER}>`

@@ -2,6 +2,9 @@
   "buckets": [
     {
       "id": "roble-56ee5.firebasestorage.app"
+    },
+    {
+      "id": "demo-roble.appspot.com"
     }
   ]
 }
