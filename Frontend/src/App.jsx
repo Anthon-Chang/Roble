@@ -28,6 +28,14 @@ import storeProfile from './context/storeProfile'
 import storeAuth from './context/storeAuth'
 import { Forbidden } from './pages/Forbidden'
 import AdminLogin from './pages/AdminLogin'
+import AdminRoute from './routes/AdminRoute'
+import AdminPanel from './pages/AdminPanel'
+import AdminCarpinteroDetail from './pages/AdminCarpinteroDetail'
+import CarpinteroRoute from './routes/CarpinteroRoute'
+import CarpinteroCV from './pages/CarpinteroCV'
+import PerfilEstado from './pages/PerfilEstado'
+import Modelos3D from './pages/Modelos3D'
+
 function App() {
 
   const [darkMode, setDarkMode] = useState(false);
@@ -98,6 +106,11 @@ function App() {
                     </PrivateRouteWithRole>
                   } /> 
                   <Route path='chat' element={<Chat/>}/>
+                  <Route path='admin' element={<AdminRoute><AdminPanel /></AdminRoute>} />
+                  <Route path='admin/carpintero/:id' element={<AdminRoute><AdminCarpinteroDetail /></AdminRoute>} />
+                  <Route path='estado-perfil' element={<CarpinteroRoute><PerfilEstado /></CarpinteroRoute>} />
+                  <Route path='cv' element={<CarpinteroRoute><CarpinteroCV /></CarpinteroRoute>} />
+                  <Route path='modelos3d' element={<CarpinteroRoute><Modelos3D /></CarpinteroRoute>} />
                 </Route>
               </Routes>
             </ProtectedRoute>
