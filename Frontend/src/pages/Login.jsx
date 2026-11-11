@@ -35,7 +35,23 @@ const Login = () => {
         console.error(error)
     }
 }
-    
+ 
+const loginAdmin = async (dataForm) => {
+    const url = `${import.meta.env.VITE_BACKEND_URL}/api/admin/login`;
+
+    const body = {
+        email: dataForm.email,
+        password: dataForm.password
+    };
+
+    const response = await fetchDataBackend(url, body, 'POST');
+
+    if (response && response.token) {
+        setToken(response.token);
+        setRol(response.rol);
+        navigate('/dashboard');
+    }
+};  
 
     const loginUser = async(dataForm) => {
         let url = " "
@@ -145,6 +161,13 @@ const Login = () => {
                     }}
                 />
             </div>
+            {/* Acceso administrador */}
+            <div className="mt-5 text-xs text-left">
+                <Link to="/admin/login"
+                    className="underline text-gray-700 hover:text-gray-900 dark:hover:text-white">
+                    Iniciar sesión como administrador
+                </Link>
+            </div>
 
 
             {/* Olvidaste tu contraseña */}
@@ -156,7 +179,7 @@ const Login = () => {
 
             {/* Enlaces inferiores */}
             <div className="mt-3 flex justify-between text-sm">
-                <Link to="/" className="underline text-gray-700 hover:text-gray-900 dark:hover:text-white">
+                <Link to="/" className="py-2 px-5 bg-[#f59e0b] text-white rounded-xl hover:bg-[#bb4d00] transition">
                     Regresar
                 </Link>
                 <Link to="/register" className="py-2 px-5 bg-[#f59e0b] text-white rounded-xl hover:bg-[#bb4d00] transition">

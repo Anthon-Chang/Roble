@@ -21,10 +21,11 @@ const storeProfile = create((set) => ({
   try {
     const storedUser = JSON.parse(localStorage.getItem("auth-token"))
 
-    //  ESTA LÍNEA ES LA CLAVE
     if (!storedUser?.state?.token) return
 
     const rol = storedUser.state.rol
+    
+    if (rol === "administrador") return
 
     const endpoint =
       rol === "carpintero"

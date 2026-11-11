@@ -27,6 +27,7 @@ import ProtectedRoute from './routes/ProtectedRoute'
 import storeProfile from './context/storeProfile'
 import storeAuth from './context/storeAuth'
 import { Forbidden } from './pages/Forbidden'
+import AdminLogin from './pages/AdminLogin'
 function App() {
 
   const [darkMode, setDarkMode] = useState(false);
@@ -59,6 +60,7 @@ function App() {
           <Route path="forbidden" element={<Forbidden />} />
           <Route index element={<Home/>}/>
           <Route path='home' element={<Home/>}/>
+          <Route path='admin/login' element={<AdminLogin />} />
           <Route path='login' element={<Login/>}/>
           <Route path='register' element={<Register/>}/>
           <Route path='forgot/:id' element={<Forgot/>}/>
