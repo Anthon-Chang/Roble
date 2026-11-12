@@ -31,10 +31,11 @@ const Dashboard = () => {
           { to: "/dashboard/modelos3d", label: "Mis modelos 3D", icon: "◇" },
         ]
       : [
-          { to: "/dashboard", label: "Dashboard", icon: "▦" },
-          { to: "/dashboard/profile", label: "Perfil", icon: "◉" },
-          { to: "/dashboard/list", label: "Listar", icon: "▤" },
-          { to: "/dashboard/chat", label: "Chat", icon: "✉" },
+          { to: "/dashboard", label: "Resumen", icon: "▦" },
+          { to: "/dashboard/explorar", label: "Explorar carpinteros", icon: "♧" },
+          { to: "/dashboard/catalogo", label: "Catálogo y diseños 3D", icon: "◇" },
+          { to: "/dashboard/solicitar", label: "Solicitar proyecto", icon: "+" },
+          { to: "/dashboard/mis-proyectos", label: "Mis proyectos", icon: "▤" },
         ]
 
   const salir = () => {
@@ -72,7 +73,7 @@ const Dashboard = () => {
       <div className="flex flex-1 min-h-0">
         <aside className="hidden md:block w-64 shrink-0 bg-white border-r border-gray-200 p-4">
           <p className="px-3 mb-3 text-xs font-bold uppercase tracking-wider text-gray-400">
-            {rol === "administrador" ? "Administración" : rol === "carpintero" ? "Mi espacio de carpintero" : "Menú"}
+            {rol === "administrador" ? "Administración" : rol === "carpintero" ? "Mi espacio de carpintero" : "Mi espacio de cliente"}
           </p>
           <nav className="space-y-1">
             {links.map((link) => (
@@ -86,6 +87,11 @@ const Dashboard = () => {
           {rol === "carpintero" && (
             <div className="mt-6 rounded-lg bg-amber-50 p-3 text-xs text-amber-900">
               Mantén tu CV actualizado y revisa el estado de aprobación de tu perfil.
+            </div>
+          )}
+          {rol === "cliente" && (
+            <div className="mt-6 rounded-lg bg-amber-50 p-3 text-xs leading-relaxed text-amber-900">
+              Encuentra profesionales aprobados, explora diseños y consulta el avance de tus pedidos desde aquí.
             </div>
           )}
         </aside>

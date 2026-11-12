@@ -30,7 +30,7 @@ const storeProfile = create((set) => ({
     const endpoint =
       rol === "carpintero"
         ? "api/carpintero/perfil"
-        : "api/proyecto/perfil"
+        : "api/cliente/perfil"
 
     const url = `${import.meta.env.VITE_BACKEND_URL}/${endpoint}`
     const respuesta = await axios.get(url, getAuthHeaders())

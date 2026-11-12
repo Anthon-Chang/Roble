@@ -15,6 +15,7 @@ import Update from './pages/Update'
 import Chat from './pages/Chat'
 import Reset from './pages/Reset'
 import Panel from './pages/Panel'
+import ClienteInicio from './pages/ClienteInicio'
 import ViewPlane from './pages/ViewPlane'
 import Navbar from './components/navbar/Navbar'
 import Nosotros from './pages/Nosotros'
@@ -35,11 +36,19 @@ import CarpinteroRoute from './routes/CarpinteroRoute'
 import CarpinteroCV from './pages/CarpinteroCV'
 import PerfilEstado from './pages/PerfilEstado'
 import Modelos3D from './pages/Modelos3D'
+import ClienteRoute from './routes/ClienteRoute'
+import Carpinteros from './pages/cliente/Carpinteros'
+import CarpinteroPerfil from './pages/cliente/CarpinteroPerfil'
+import Catalogo from './pages/cliente/Catalogo'
+import ModeloDetalle from './pages/cliente/ModeloDetalle'
+import SolicitarProyecto from './pages/cliente/SolicitarProyecto'
+import MisProyectos from './pages/cliente/MisProyectos'
 
 const DashboardInicio = () => {
   const rol = storeAuth((state) => state.rol)
   if (rol === "administrador") return <Navigate to="/dashboard/admin" replace />
   if (rol === "carpintero") return <Navigate to="/dashboard/estado-perfil" replace />
+  if (rol === "cliente") return <ClienteInicio />
   return <Panel />
 }
 
@@ -113,6 +122,12 @@ function App() {
                   <Route path='estado-perfil' element={<CarpinteroRoute><PerfilEstado /></CarpinteroRoute>} />
                   <Route path='cv' element={<CarpinteroRoute><CarpinteroCV /></CarpinteroRoute>} />
                   <Route path='modelos3d' element={<CarpinteroRoute><Modelos3D /></CarpinteroRoute>} />
+                  <Route path='explorar' element={<ClienteRoute><Carpinteros /></ClienteRoute>} />
+                  <Route path='explorar/:id' element={<ClienteRoute><CarpinteroPerfil /></ClienteRoute>} />
+                  <Route path='catalogo' element={<ClienteRoute><Catalogo /></ClienteRoute>} />
+                  <Route path='catalogo/modelo/:id' element={<ClienteRoute><ModeloDetalle /></ClienteRoute>} />
+                  <Route path='solicitar' element={<ClienteRoute><SolicitarProyecto /></ClienteRoute>} />
+                  <Route path='mis-proyectos' element={<ClienteRoute><MisProyectos /></ClienteRoute>} />
                 </Route>
               </Routes>
             </ProtectedRoute>

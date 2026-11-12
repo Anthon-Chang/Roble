@@ -8,7 +8,8 @@ import storeAuth from "../context/storeAuth"
 import logo from '../../public/images/login_2.webp'
 import { GoogleLogin } from "@react-oauth/google";
 import axios from "axios";
-
+import { toast } from 'react-toastify'
+import { loginUnificado } from '../services/clienteService'
 
 const Login = () => {
     const [showPassword, setShowPassword] = useState(false);
@@ -53,31 +54,20 @@ const loginAdmin = async (dataForm) => {
     }
 };  
 
-    const loginUser = async(dataForm) => {
-        let url = " "
-        let body = {}
-        if (dataForm.password.includes("CLI")){
-            url = `${import.meta.env.VITE_BACKEND_URL}/api/proyecto/login`
-            body = {
-            emailCliente: dataForm.email,
-            passwordCliente: dataForm.password
-        }
-        }else{
-            url = `${import.meta.env.VITE_BACKEND_URL}/api/carpintero/login`
-            body = {
-            email: dataForm.email,
-            password: dataForm.password
-        }
-        }
-            
-            
-        const response = await fetchDataBackend(url, body,'POST')
-        setToken(response.token)
-        setRol(response.rol)
-        if(response){
-            navigate('/dashboard')
-        }
+const loginUser = async (dataForm) => {
+    const toastId = toast.loading("Procesando solicitud...")
+    try {
+        const data = await loginUnificado(dataForm)
+        toast.dismiss(toastId)
+        setRol(data.rol)      // primero el rol, para que ya esté guardado cuando App.jsx llame a profile()
+        setToken(data.token)
+        navigate("/dashboard")
+    } catch (error) {
+        toast.dismiss(toastId)
+        toast.error(error.response?.data?.msg || "No se pudo iniciar sesión")
     }
+}
+
 
     return (
     <div className="relative h-screen w-full flex justify-center items-center">
