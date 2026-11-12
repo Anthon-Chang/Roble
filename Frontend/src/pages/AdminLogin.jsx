@@ -28,7 +28,7 @@ const AdminLogin = () => {
       })
 
       toast.success("Bienvenido, administrador")
-      navigate("/dashboard")
+      navigate("/dashboard/admin", { replace: true })
     } catch (error) {
       toast.error(error.response?.data?.msg || "No se pudo iniciar sesión")
     } finally {

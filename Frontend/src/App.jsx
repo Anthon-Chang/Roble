@@ -1,5 +1,5 @@
 import PrivateRouteWithRole from './routes/PrivateRouteWithRole'
-import { BrowserRouter, Route, Routes } from 'react-router'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
 import { Home } from './pages/Home'
 import Login from './pages/Login'
 import { Register } from './pages/Register'
@@ -35,6 +35,13 @@ import CarpinteroRoute from './routes/CarpinteroRoute'
 import CarpinteroCV from './pages/CarpinteroCV'
 import PerfilEstado from './pages/PerfilEstado'
 import Modelos3D from './pages/Modelos3D'
+
+const DashboardInicio = () => {
+  const rol = storeAuth((state) => state.rol)
+  if (rol === "administrador") return <Navigate to="/dashboard/admin" replace />
+  if (rol === "carpintero") return <Navigate to="/dashboard/estado-perfil" replace />
+  return <Panel />
+}
 
 function App() {
 
@@ -86,12 +93,7 @@ function App() {
             <ProtectedRoute>
               <Routes>
                 <Route element={<Dashboard />}>
-                <Route index element={
-                    <PrivateRouteWithRole>
-                      <Panel />
-                    </PrivateRouteWithRole>
-                  } />
-                  <Route index element={<Panel/>}/>
+                  <Route index element={<DashboardInicio />} />
                   <Route path='profile' element={<Profile/>}/>
                   <Route path='list' element={<List/>}/>
                   <Route path='details/:id' element={<Details/>}/>
