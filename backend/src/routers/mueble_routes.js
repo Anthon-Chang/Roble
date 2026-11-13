@@ -9,6 +9,7 @@ import {
 } from "../controllers/mueble_controller.js"
 import { verificarTokenJWT } from "../middlewares/JWT.js"
 import { carpinteroAprobado } from "../middlewares/roles.js"
+import { subidaArchivos } from "../middlewares/subida.js"
 
 const router = Router()
 
@@ -20,8 +21,8 @@ router.get("/mis-muebles", carpinteroAprobado, listarMisMuebles)
 router.get("/:id", detalleMueble)
 
 // Escritura: solo carpinteros aprobados, y únicamente sobre sus propios muebles
-router.post("/", carpinteroAprobado, crearMueble)
-router.put("/:id", carpinteroAprobado, actualizarMueble)
+router.post("/", carpinteroAprobado, subidaArchivos, crearMueble)
+router.put("/:id", carpinteroAprobado, subidaArchivos, actualizarMueble)
 router.delete("/:id", carpinteroAprobado, eliminarMueble)
 
 export default router

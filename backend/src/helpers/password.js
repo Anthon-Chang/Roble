@@ -15,7 +15,7 @@ export const matchPassword = (password, hash) => {
 export const crearTokenAleatorio = () => crypto.randomBytes(24).toString("hex")
 
 // Contraseña temporal legible para el cliente creado por un carpintero.
-export const crearPasswordTemporal = () => "CLI" + crypto.randomBytes(4).toString("hex").toUpperCase()
+export const crearPasswordTemporal = () => "CLI" + crypto.randomBytes(8).toString("hex").toUpperCase()
 
 export const emailValido = (email) => typeof email === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
 

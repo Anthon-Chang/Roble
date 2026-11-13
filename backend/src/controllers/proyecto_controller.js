@@ -51,7 +51,7 @@ const borrarImagenes = (campos) =>
 const responderError = (res, error) => {
     if (error.codigo === 400) return res.status(400).json({ msg: error.message })
     console.error(error)
-    return res.status(500).json({ msg: `❌ Error en el servidor - ${error.message}` })
+    return res.status(500).json({ msg: "❌ Error en el servidor" })
 }
 
 // Quita campos internos y reemplaza el id del carpintero por un resumen (equivale al populate de Mongoose).
@@ -242,7 +242,7 @@ const detalleProyecto = async (req, res) => {
 
         const estados = (await Estado.porProyecto(proyecto._id))
             .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
-            .map(({ createdAt, updatedAt, ...resto }) => resto)
+            .map(({ createdAt, updatedAt, pagoEnCurso, ...resto }) => resto)
 
         const [presentado] = await presentarProyectos([proyecto])
         res.status(200).json({ ...presentado, estados })

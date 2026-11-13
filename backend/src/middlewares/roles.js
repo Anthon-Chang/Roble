@@ -19,3 +19,10 @@ export const carpinteroAprobado = (req, res, next) => {
   }
   next()
 }
+
+// Para rutas compartidas entre roles: si quien llama es carpintero, debe estar aprobado.
+// Un carpintero pendiente o rechazado no puede operar sobre proyectos ni estados.
+export const aprobadoSiEsCarpintero = (req, res, next) => {
+  if (req.user?.rol === "carpintero") return carpinteroAprobado(req, res, next)
+  next()
+}

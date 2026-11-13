@@ -47,7 +47,7 @@ export const loginGoogle = async (req, res) => {
     }
 
     res.json({
-      token: crearTokenJWT(user._id, user.rol),
+      token: crearTokenJWT(user._id, user.rol, user.tokenVersion),
       rol: user.rol,
       estadoAprobacion: user.estadoAprobacion,
     })

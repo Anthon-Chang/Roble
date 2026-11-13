@@ -10,6 +10,7 @@ import {
 } from "../controllers/model3d_controller.js"
 import { verificarTokenJWT } from "../middlewares/JWT.js"
 import { carpinteroAprobado } from "../middlewares/roles.js"
+import { subidaArchivos } from "../middlewares/subida.js"
 
 const router = Router()
 
@@ -22,8 +23,8 @@ router.get("/mis-modelos", carpinteroAprobado, getMyModels)
 router.get("/:id", getModelById)
 
 // Gestión del catálogo (HU-007): solo carpinteros aprobados, sobre sus propios modelos
-router.post("/", carpinteroAprobado, createModel)
-router.put("/:id", carpinteroAprobado, updateModel)
+router.post("/", carpinteroAprobado, subidaArchivos, createModel)
+router.put("/:id", carpinteroAprobado, subidaArchivos, updateModel)
 router.delete("/:id", carpinteroAprobado, deleteModel)
 
 export default router

@@ -9,7 +9,8 @@ const transporter = nodemailer.createTransport({
     user: process.env.GMAIL_USER,
     pass: process.env.GMAIL_PASS,
   },
-  tls: { rejectUnauthorized: process.env.NODE_ENV === "production" },
+  // El certificado del SMTP se valida siempre; solo se relaja con una variable explícita (p. ej. un servidor local de pruebas)
+  tls: { rejectUnauthorized: process.env.SMTP_ALLOW_SELF_SIGNED !== "true" },
 })
 
 export const REMITENTE = `"ROBLE" <${process.env.GMAIL_USER}>`

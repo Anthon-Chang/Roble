@@ -32,7 +32,7 @@ export const getAllModels = async (req, res) => {
         res.status(200).json({ status: "success", count: modelos.length, data: modelos })
     } catch (err) {
         console.error(err)
-        res.status(500).json({ status: "error", message: "Error obteniendo modelos", details: err.message })
+        res.status(500).json({ status: "error", message: "Error obteniendo modelos" })
     }
 }
 
@@ -51,7 +51,7 @@ export const getModelById = async (req, res) => {
         res.status(200).json({ status: "success", data: modelo })
     } catch (err) {
         console.error(err)
-        res.status(500).json({ status: "error", message: "Error al obtener el modelo", details: err.message })
+        res.status(500).json({ status: "error", message: "Error al obtener el modelo" })
     }
 }
 
@@ -69,7 +69,7 @@ export const searchModelByName = async (req, res) => {
         res.status(200).json({ status: "success", data: modelo })
     } catch (err) {
         console.error(err)
-        res.status(500).json({ status: "error", message: "Error al buscar el modelo", details: err.message })
+        res.status(500).json({ status: "error", message: "Error al buscar el modelo" })
     }
 }
 
@@ -79,7 +79,7 @@ export const getMyModels = async (req, res) => {
         res.status(200).json({ status: "success", count: modelos.length, data: modelos })
     } catch (err) {
         console.error(err)
-        res.status(500).json({ status: "error", message: "Error obteniendo modelos", details: err.message })
+        res.status(500).json({ status: "error", message: "Error obteniendo modelos" })
     }
 }
 
@@ -119,7 +119,7 @@ export const createModel = async (req, res) => {
         res.status(201).json({ status: "success", data: modelo })
     } catch (err) {
         console.error(err)
-        res.status(500).json({ status: "error", message: "No se pudo crear el modelo", details: err.message })
+        res.status(500).json({ status: "error", message: "No se pudo crear el modelo" })
     } finally {
         await limpiarTemporales(req.files)
     }
@@ -170,7 +170,7 @@ export const updateModel = async (req, res) => {
         res.status(200).json({ status: "success", data: actualizado })
     } catch (err) {
         console.error(err)
-        res.status(500).json({ status: "error", message: "No se pudo actualizar el modelo", details: err.message })
+        res.status(500).json({ status: "error", message: "No se pudo actualizar el modelo" })
     } finally {
         await limpiarTemporales(req.files)
     }
@@ -189,6 +189,6 @@ export const deleteModel = async (req, res) => {
         res.status(200).json({ status: "success", message: "Modelo eliminado correctamente" })
     } catch (err) {
         console.error(err)
-        res.status(500).json({ status: "error", message: "No se pudo eliminar el modelo", details: err.message })
+        res.status(500).json({ status: "error", message: "No se pudo eliminar el modelo" })
     }
 }

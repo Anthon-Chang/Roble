@@ -45,7 +45,15 @@ class Coleccion extends Consulta {
 
 export const crearFirestoreSimulado = () => {
     const colecciones = new Map()
+    // Las transacciones se ejecutan de una en una, como si fueran atómicas
+    let cola = Promise.resolve()
     return {
+        runTransaction(fn) {
+            const tx = { get: (ref) => ref.get(), update: (ref, cambios) => ref.update(cambios) }
+            const resultado = cola.then(() => fn(tx))
+            cola = resultado.catch(() => {})
+            return resultado
+        },
         collection(nombre) {
             if (!colecciones.has(nombre)) colecciones.set(nombre, new Coleccion())
             return colecciones.get(nombre)

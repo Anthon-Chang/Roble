@@ -25,7 +25,7 @@ export const loginAdmin = async (req, res) => {
         }
 
         res.status(200).json({
-            token: crearTokenJWT(admin._id, "administrador"),
+            token: crearTokenJWT(admin._id, "administrador", admin.tokenVersion),
             rol: "administrador",
             nombre: admin.nombre,
             _id: admin._id,
@@ -33,7 +33,7 @@ export const loginAdmin = async (req, res) => {
         })
     } catch (error) {
         console.error(error)
-        res.status(500).json({ msg: `❌ Error en el servidor - ${error.message}` })
+        res.status(500).json({ msg: "❌ Error en el servidor" })
     }
 }
 
@@ -66,7 +66,7 @@ export const listarUsuarios = async (req, res) => {
         res.status(200).json(usuarios)
     } catch (error) {
         console.error(error)
-        res.status(500).json({ msg: `❌ Error en el servidor - ${error.message}` })
+        res.status(500).json({ msg: "❌ Error en el servidor" })
     }
 }
 
@@ -84,7 +84,7 @@ export const detalleUsuario = async (req, res) => {
         res.status(200).json(sinSecretos(usuario, OCULTOS_ADMIN))
     } catch (error) {
         console.error(error)
-        res.status(500).json({ msg: `❌ Error en el servidor - ${error.message}` })
+        res.status(500).json({ msg: "❌ Error en el servidor" })
     }
 }
 
@@ -116,7 +116,7 @@ const cambiarAprobacion = async (req, res, estado) => {
         })
     } catch (error) {
         console.error(error)
-        res.status(500).json({ msg: `❌ Error en el servidor - ${error.message}` })
+        res.status(500).json({ msg: "❌ Error en el servidor" })
     }
 }
 

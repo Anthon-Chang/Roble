@@ -17,6 +17,7 @@ import {
 
 import { verificarTokenJWT } from '../middlewares/JWT.js'
 import { permitirRoles } from '../middlewares/roles.js'
+import { subidaArchivos } from '../middlewares/subida.js'
 
 const router = Router()
 
@@ -47,8 +48,8 @@ router.put('/actualizarpassword/:id', verificarTokenJWT, permitirRoles('carpinte
 
 // CV en PDF (HU-004): solo carpinteros
 router.get('/cv', verificarTokenJWT, permitirRoles('carpintero'), verMiCV)
-router.post('/cv', verificarTokenJWT, permitirRoles('carpintero'), subirCV)
-router.put('/cv', verificarTokenJWT, permitirRoles('carpintero'), subirCV)
+router.post('/cv', verificarTokenJWT, permitirRoles('carpintero'), subidaArchivos, subirCV)
+router.put('/cv', verificarTokenJWT, permitirRoles('carpintero'), subidaArchivos, subirCV)
 
 // Perfiles profesionales aprobados (HU-009): cualquier usuario autenticado
 router.get('/aprobados', verificarTokenJWT, listarAprobados)

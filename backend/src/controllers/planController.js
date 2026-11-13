@@ -10,6 +10,10 @@ const leerNumero = (valor) => {
   return Number.isFinite(numero) && numero >= 0 ? numero : NaN
 }
 
+// Un plano lo gestionan los administradores y su creador. Los planos anteriores a este control no
+// tienen propietario (creadoPor) y por tanto solo los gestiona un administrador.
+const puedeGestionar = (plan, user) => user.rol === "administrador" || (!!plan.creadoPor && plan.creadoPor === user._id)
+
 // Crear un nuevo plano (imagen en Firebase Storage, campo multipart "image")
 const createPlan = async (req, res) => {
   try {
@@ -37,12 +41,15 @@ const createPlan = async (req, res) => {
       description: texto(description) || null,
       image_url: url,
       image_path: path,
+      // Propietario: solo él (o un administrador) podrá modificar o borrar el plano
+      creadoPor: req.user._id,
+      creadoPorRol: req.user.rol,
     })
 
     res.status(201).json(nuevoPlano)
   } catch (error) {
     console.error(error)
-    res.status(500).json({ message: "Error al crear el plano", error: error.message })
+    res.status(500).json({ message: "Error al crear el plano" })
   } finally {
     await limpiarTemporales(req.files)
   }
@@ -53,7 +60,7 @@ const getPlans = async (req, res) => {
   try {
     res.json(await Plan.listar())
   } catch (error) {
-    res.status(500).json({ message: "Error al obtener planos", error: error.message })
+    res.status(500).json({ message: "Error al obtener planos" })
   }
 }
 
@@ -64,7 +71,7 @@ const getPlanById = async (req, res) => {
     if (!plan) return res.status(404).json({ message: "Plano no encontrado" })
     res.json(plan)
   } catch (error) {
-    res.status(500).json({ message: "Error al obtener el plano", error: error.message })
+    res.status(500).json({ message: "Error al obtener el plano" })
   }
 }
 
@@ -73,6 +80,7 @@ const updatePlan = async (req, res) => {
   try {
     const plan = await Plan.porId(req.params.id)
     if (!plan) return res.status(404).json({ message: "Plano no encontrado" })
+    if (!puedeGestionar(plan, req.user)) return res.status(403).json({ message: "Acción no permitida" })
 
     const cambios = {}
     for (const campo of ["name", "style", "description"]) {
@@ -87,7 +95,7 @@ const updatePlan = async (req, res) => {
 
     res.json(await Plan.actualizar(plan._id, cambios))
   } catch (error) {
-    res.status(500).json({ message: "Error al actualizar el plano", error: error.message })
+    res.status(500).json({ message: "Error al actualizar el plano" })
   }
 }
 
@@ -96,12 +104,13 @@ const deletePlan = async (req, res) => {
   try {
     const plan = await Plan.porId(req.params.id)
     if (!plan) return res.status(404).json({ message: "Plano no encontrado" })
+    if (!puedeGestionar(plan, req.user)) return res.status(403).json({ message: "Acción no permitida" })
 
     await Plan.eliminar(plan._id)
     await eliminarArchivo(plan.image_path)
     res.json({ message: "Plano eliminado" })
   } catch (error) {
-    res.status(500).json({ message: "Error al eliminar el plano", error: error.message })
+    res.status(500).json({ message: "Error al eliminar el plano" })
   }
 }
 

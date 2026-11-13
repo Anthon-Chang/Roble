@@ -82,7 +82,7 @@ const registro = async (req, res) => {
         res.status(201).json({ msg: "Revisa tu correo electrónico para confirmar tu cuenta" })
     } catch (error) {
         console.error(error)
-        res.status(500).json({ msg: `❌ Error en el servidor - ${error.message}` })
+        res.status(500).json({ msg: "❌ Error en el servidor" })
     }
 }
 
@@ -100,7 +100,7 @@ const confirmarMail = async (req, res) => {
         res.status(200).json({ msg: "Cuenta confirmada, ya puedes iniciar sesión" })
     } catch (error) {
         console.error(error)
-        res.status(500).json({ msg: `❌ Error en el servidor - ${error.message}` })
+        res.status(500).json({ msg: "❌ Error en el servidor" })
     }
 }
 
@@ -126,7 +126,7 @@ const recuperarPassword = async (req, res) => {
         res.status(200).json({ msg: "Revisa tu correo electrónico para reestablecer tu password" })
     } catch (error) {
         console.error(error)
-        res.status(500).json({ msg: `❌ Error en el servidor - ${error.message}` })
+        res.status(500).json({ msg: "❌ Error en el servidor" })
     }
 }
 
@@ -145,7 +145,7 @@ const comprobarTokenPassword = async (req, res) => {
         res.status(200).json({ msg: "Token confirmado, ya puedes crear tu nuevo password" })
     } catch (error) {
         console.error(error)
-        res.status(500).json({ msg: `❌ Error en el servidor - ${error.message}` })
+        res.status(500).json({ msg: "❌ Error en el servidor" })
     }
 }
 
@@ -175,11 +175,13 @@ const crearNuevoPassword = async (req, res) => {
             token: null,
             tokenExpira: null,
             password: await encryptPassword(password),
+            // Restablecer la contraseña cierra todas las sesiones abiertas
+            tokenVersion: (carpinteroBDD.tokenVersion || 0) + 1,
         })
         res.status(200).json({ msg: "Felicitaciones, ya puedes iniciar sesión con tu nuevo password" })
     } catch (error) {
         console.error(error)
-        res.status(500).json({ msg: `❌ Error en el servidor - ${error.message}` })
+        res.status(500).json({ msg: "❌ Error en el servidor" })
     }
 }
 
@@ -208,7 +210,7 @@ const login = async (req, res) => {
             return res.status(401).json({ msg: "El password no es correcto" })
         }
 
-        const token = crearTokenJWT(carpinteroBDD._id, carpinteroBDD.rol)
+        const token = crearTokenJWT(carpinteroBDD._id, carpinteroBDD.rol, carpinteroBDD.tokenVersion)
 
         res.status(200).json({
             token,
@@ -225,7 +227,7 @@ const login = async (req, res) => {
         })
     } catch (error) {
         console.error(error)
-        res.status(500).json({ msg: `❌ Error en el servidor - ${error.message}` })
+        res.status(500).json({ msg: "❌ Error en el servidor" })
     }
 }
 
@@ -273,7 +275,7 @@ const actualizarPerfil = async (req, res) => {
         res.status(200).json(sinSecretos(actualizado, ["cvPath"]))
     } catch (error) {
         console.error(error)
-        res.status(500).json({ msg: `❌ Error en el servidor - ${error.message}` })
+        res.status(500).json({ msg: "❌ Error en el servidor" })
     }
 }
 
@@ -301,11 +303,16 @@ const actualizarPassword = async (req, res) => {
             return res.status(400).json({ msg: "Lo sentimos, el password actual no es el correcto" })
         }
 
-        await Carpintero.actualizar(carpinteroBDD._id, { password: await encryptPassword(passwordnuevo) })
-        res.status(200).json({ msg: "Password actualizado correctamente" })
+        // Cambiar la contraseña invalida las demás sesiones; se devuelve un token nuevo para esta
+        const tokenVersion = (carpinteroBDD.tokenVersion || 0) + 1
+        await Carpintero.actualizar(carpinteroBDD._id, { password: await encryptPassword(passwordnuevo), tokenVersion })
+        res.status(200).json({
+            msg: "Password actualizado correctamente",
+            token: crearTokenJWT(carpinteroBDD._id, carpinteroBDD.rol, tokenVersion),
+        })
     } catch (error) {
         console.error(error)
-        res.status(500).json({ msg: `❌ Error en el servidor - ${error.message}` })
+        res.status(500).json({ msg: "❌ Error en el servidor" })
     }
 }
 
@@ -346,7 +353,7 @@ const subirCV = async (req, res) => {
         })
     } catch (error) {
         console.error(error)
-        res.status(500).json({ msg: `❌ Error en el servidor - ${error.message}` })
+        res.status(500).json({ msg: "❌ Error en el servidor" })
     } finally {
         await limpiarTemporales(req.files)
     }
@@ -366,7 +373,7 @@ const listarAprobados = async (req, res) => {
         res.status(200).json(aprobados.map(camposPublicos))
     } catch (error) {
         console.error(error)
-        res.status(500).json({ msg: `❌ Error en el servidor - ${error.message}` })
+        res.status(500).json({ msg: "❌ Error en el servidor" })
     }
 }
 
@@ -383,7 +390,7 @@ const detalleAprobado = async (req, res) => {
         res.status(200).json({ ...camposPublicos(carpintero), muebles, modelos3D })
     } catch (error) {
         console.error(error)
-        res.status(500).json({ msg: `❌ Error en el servidor - ${error.message}` })
+        res.status(500).json({ msg: "❌ Error en el servidor" })
     }
 }
 

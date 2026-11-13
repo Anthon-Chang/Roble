@@ -26,7 +26,8 @@ const sendMailToRegister = async (userMail, token) => {
 // =====================================
 // ENVÍO DE CORREO PARA RECUPERAR PASSWORD
 // =====================================
-const sendMailToRecoveryPassword = async (userMail, token) => {
+const sendMailToRecoveryPassword = async (userMail, token, rol = "carpintero") => {
+  const sufijo = rol === "cliente" ? "?rol=cliente" : ""
   return await enviar({
     enviar,
     to: [userMail],
@@ -34,7 +35,7 @@ const sendMailToRecoveryPassword = async (userMail, token) => {
     html: `
       <h1>ROBLE 🪚🧰</h1>
       <p>Has solicitado restablecer tu contraseña. El enlace es válido por 1 hora.</p>
-      <a href="${process.env.URL_FRONTEND}reset/${token}">
+      <a href="${process.env.URL_FRONTEND}reset/${token}${sufijo}">
         Clic para restablecer tu contraseña
       </a>
       <hr>

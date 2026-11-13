@@ -1,6 +1,8 @@
 import Stripe from "stripe"
 import Estado, { PRIORIDADES } from "../models/Estado.js"
 import Proyecto from "../models/Proyecto.js"
+import Cliente from "../models/Cliente.js"
+import { reservar, liberar } from "../helpers/firestore.js"
 
 // Cliente de Stripe creado al usarse (así no falla al importar si la variable aún no está cargada)
 let stripe = null
@@ -51,7 +53,7 @@ const registrarEstado = async (req, res) => {
         res.status(201).json({ msg: "Estado registrado correctamente" })
     } catch (error) {
         console.error(error)
-        res.status(500).json({ msg: `❌ Error en el servidor - ${error.message}` })
+        res.status(500).json({ msg: "❌ Error en el servidor" })
     }
 }
 
@@ -74,14 +76,18 @@ const eliminarEstado = async (req, res) => {
         res.status(200).json({ msg: "Estado eliminado exitosamente" })
     } catch (error) {
         console.error(error)
-        res.status(500).json({ msg: `❌ Error en el servidor - ${error.message}` })
+        res.status(500).json({ msg: "❌ Error en el servidor" })
     }
 }
 
 // =====================================================
 // PAGAR ESTADO (cliente dueño del proyecto)
 // =====================================================
+// Mientras un cobro está en curso el estado queda reservado (evita dos cobros simultáneos del mismo estado)
+const RESERVA_PAGO_MS = 2 * 60 * 1000
+
 const pagarEstado = async (req, res) => {
+    let reservado = null
     try {
         const { paymentMethodId, estadoId, cantidad, motivo } = req.body
 
@@ -97,7 +103,15 @@ const pagarEstado = async (req, res) => {
             return res.status(403).json({ msg: "No puedes pagar estados de proyectos ajenos" })
         }
 
-        if (estado.estadoPago === "Pagado") {
+        // Reserva atómica: si otra petición ya está cobrando este estado, esta se rechaza
+        if (!(await reservar("estados", estado._id, "pagoEnCurso", RESERVA_PAGO_MS))) {
+            return res.status(409).json({ msg: "Ya hay un pago en curso para este estado" })
+        }
+        reservado = estado._id
+
+        // Se vuelve a leer con la reserva tomada: otra petición pudo terminar el pago justo antes
+        const vigente = await Estado.porId(estado._id)
+        if (!vigente || vigente.estadoPago === "Pagado") {
             return res.status(400).json({ msg: "Este estado ya fue pagado" })
         }
 
@@ -107,10 +121,18 @@ const pagarEstado = async (req, res) => {
         }
 
         const stripeClient = getStripe()
-        const clienteStripe = await stripeClient.customers.create({
-            name: proyecto.nombreCliente,
-            email: proyecto.emailCliente,
-        })
+
+        // Un solo Customer de Stripe por cliente (antes se creaba uno nuevo en cada pago)
+        const cliente = await Cliente.porId(req.user._id)
+        let stripeCustomerId = cliente?.stripeCustomerId
+        if (!stripeCustomerId) {
+            const creado = await stripeClient.customers.create({
+                name: proyecto.nombreCliente,
+                email: proyecto.emailCliente,
+            })
+            stripeCustomerId = creado.id
+            await Cliente.actualizar(req.user._id, { stripeCustomerId })
+        }
 
         // El monto REAL viene de la base de datos, nunca del cliente
         const payment = await stripeClient.paymentIntents.create({
@@ -119,9 +141,12 @@ const pagarEstado = async (req, res) => {
             description: motivo || `Pago estado: ${estado.nombre}`,
             payment_method: paymentMethodId,
             confirm: true,
-            customer: clienteStripe.id,
+            customer: stripeCustomerId,
             receipt_email: proyecto.emailCliente,
             automatic_payment_methods: { enabled: true, allow_redirects: "never" },
+        }, {
+            // Si la misma petición se repite (doble clic, reintento de red) Stripe devuelve el mismo cobro
+            idempotencyKey: `estado-${estado._id}-${paymentMethodId}`,
         })
 
         if (payment.status === "succeeded") {
@@ -132,7 +157,11 @@ const pagarEstado = async (req, res) => {
         res.status(400).json({ msg: `Pago no completado: ${payment.status}` })
     } catch (error) {
         console.error(error)
-        res.status(500).json({ msg: `❌ Error al pagar el estado - ${error.message}` })
+        // Un rechazo de la tarjeta sí es información útil y segura para el cliente
+        if (error?.type === "StripeCardError") return res.status(402).json({ msg: error.message })
+        res.status(500).json({ msg: "❌ Error al pagar el estado" })
+    } finally {
+        if (reservado) await liberar("estados", reservado, "pagoEnCurso").catch((e) => console.error(e))
     }
 }
 

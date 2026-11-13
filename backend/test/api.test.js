@@ -1,6 +1,11 @@
 // Pruebas de integración con Firestore y Storage simulados (no requieren credenciales ni red).
 import { test, before, after, describe } from "node:test"
 import assert from "node:assert/strict"
+import http from "node:http"
+import fs from "node:fs"
+import jwt from "jsonwebtoken"
+import { Server } from "socket.io"
+import { io as clienteSocket } from "socket.io-client"
 import { crearFirestoreSimulado, crearBucketSimulado } from "./firebaseSimulado.js"
 
 process.env.JWT_SECRET = "secreto-de-prueba"
@@ -10,6 +15,8 @@ process.env.URL_FRONTEND = "http://localhost:5173/"
 process.env.GOOGLE_CLIENT_ID = "google-falso"
 process.env.NODE_ENV = "test"
 delete process.env.ADMIN_NOTIFY_EMAIL
+// Las pruebas repiten registros y logins desde la misma IP; el test de rate limit lo activa a propósito
+process.env.RATE_LIMIT_DISABLED = "true"
 
 const db = crearFirestoreSimulado()
 const bucket = crearBucketSimulado()
@@ -488,9 +495,21 @@ describe("HU-010 / HU-011 Proyectos y requerimientos", () => {
         assert.equal(login.status, 200)
         assert.equal(login.datos.rol, "cliente")
 
+        assert.equal(login.datos.passwordTemporal, true)
+
+        // Con la contraseña temporal solo se puede ver el perfil y cambiar la contraseña
         const perfil = await api("GET", "/api/proyecto/perfil", { token: login.datos.token })
         assert.equal(perfil.datos.nombreCliente, "Pedro Gomez")
-        const detalle = await api("GET", `/api/proyecto/detalle/${login.datos._id}`, { token: login.datos.token })
+        const bloqueado = await api("GET", `/api/proyecto/detalle/${login.datos._id}`, { token: login.datos.token })
+        assert.equal(bloqueado.status, 403)
+        assert.equal(bloqueado.datos.cambiarPassword, true)
+
+        const cambio = await api("PUT", "/api/cliente/actualizarpassword", {
+            token: login.datos.token,
+            json: { passwordactual: password, passwordnuevo: "definitiva123" },
+        })
+        assert.equal(cambio.status, 200)
+        const detalle = await api("GET", `/api/proyecto/detalle/${login.datos._id}`, { token: cambio.datos.token })
         assert.equal(detalle.status, 200)
         assert.equal(detalle.datos.nombreProyecto, "Escritorio")
         assert.equal(detalle.datos.passwordCliente, undefined)
@@ -565,5 +584,430 @@ describe("Estados y seguridad general", () => {
         assert.equal(propio.datos.nombre, "Nuevo")
         assert.equal(db.collection("carpinteros").datos.get(a.id).rol, "carpintero")
         assert.equal(propio.datos.password, undefined)
+    })
+})
+
+// =====================================================================
+//  PROTECCIÓN DE RUTAS DEL BACKEND
+// =====================================================================
+
+// Petición HTTP con control total de las cabeceras (fetch no deja fijar Origin)
+const crudo = (metodo, ruta, cabeceras = {}) =>
+    new Promise((resolve, reject) => {
+        const url = new URL(base + ruta)
+        const req = http.request({ hostname: url.hostname, port: url.port, path: url.pathname + url.search, method: metodo, headers: cabeceras }, (res) => {
+            let cuerpo = ""
+            res.on("data", (d) => (cuerpo += d))
+            res.on("end", () => resolve({ status: res.statusCode, headers: res.headers, cuerpo }))
+        })
+        req.on("error", reject)
+        req.end()
+    })
+
+const archivosEnUploads = () => (fs.existsSync("./uploads") ? fs.readdirSync("./uploads").length : 0)
+
+describe("Autenticación: JWT, tokenVersion y logout", () => {
+    test("rutas privadas sin token o con token falso responden 401", async () => {
+        const rutas = [
+            ["GET", "/api/admin/usuarios"], ["GET", "/api/carpintero/perfil"], ["GET", "/api/carpintero/aprobados"],
+            ["GET", "/api/cliente/perfil"], ["GET", "/api/proyecto/listar"], ["GET", "/api/proyecto/requerimientos"],
+            ["POST", "/api/proyecto/solicitar"], ["POST", "/api/estado/registro"], ["POST", "/api/estado/pagar"],
+            ["GET", "/api/mueble"], ["GET", "/api/models"], ["POST", "/api/plans"], ["PUT", "/api/plans/x"],
+            ["DELETE", "/api/plans/x"], ["POST", "/api/auth/logout"],
+        ]
+        for (const [metodo, ruta] of rutas) {
+            assert.equal((await api(metodo, ruta)).status, 401, `${metodo} ${ruta} sin token`)
+            assert.equal((await api(metodo, ruta, { token: "token.falso.xyz" })).status, 401, `${metodo} ${ruta} token falso`)
+        }
+    })
+
+    test("el rol incorrecto recibe 403", async () => {
+        const carpintero = await crearCarpintero({ aprobar: true })
+        const cliente = await crearCliente()
+        assert.equal((await api("GET", "/api/admin/usuarios", { token: carpintero.token })).status, 403)
+        assert.equal((await api("GET", "/api/admin/usuarios", { token: cliente.token })).status, 403)
+        assert.equal((await api("GET", "/api/carpintero/perfil", { token: cliente.token })).status, 403)
+        assert.equal((await api("GET", "/api/cliente/perfil", { token: carpintero.token })).status, 403)
+        assert.equal((await api("POST", "/api/proyecto/solicitar", { token: carpintero.token })).status, 403)
+        assert.equal((await api("POST", "/api/estado/pagar", { token: carpintero.token })).status, 403)
+    })
+
+    test("solo se aceptan tokens HS256 firmados con el secreto del servidor", async () => {
+        const c = await crearCarpintero()
+        const payload = { id: c.id, rol: "carpintero", tv: 0 }
+        const otroSecreto = jwt.sign(payload, "otro-secreto-distinto")
+        const otroAlgoritmo = jwt.sign(payload, process.env.JWT_SECRET, { algorithm: "HS512" })
+        const sinFirma = jwt.sign(payload, "", { algorithm: "none" })
+        for (const token of [otroSecreto, otroAlgoritmo, sinFirma]) {
+            assert.equal((await api("GET", "/api/carpintero/perfil", { token })).status, 401)
+        }
+        // Un token emitido antes de existir tokenVersion (sin `tv`) sigue valiendo mientras la versión sea 0
+        const antiguo = jwt.sign({ id: c.id, rol: "carpintero" }, process.env.JWT_SECRET, { expiresIn: "1d" })
+        assert.equal((await api("GET", "/api/carpintero/perfil", { token: antiguo })).status, 200)
+    })
+
+    test("logout invalida el token actual y los emitidos antes", async () => {
+        const c = await crearCarpintero()
+        const segundaSesion = (await api("POST", "/api/carpintero/login", { json: { email: c.email, password: "clave12345" } })).datos.token
+        assert.equal((await api("GET", "/api/carpintero/perfil", { token: c.token })).status, 200)
+
+        assert.equal((await api("POST", "/api/auth/logout", { token: c.token })).status, 200)
+        assert.equal((await api("GET", "/api/carpintero/perfil", { token: c.token })).status, 401)
+        assert.equal((await api("GET", "/api/carpintero/perfil", { token: segundaSesion })).status, 401)
+
+        // Iniciar sesión de nuevo emite un token con la versión nueva
+        const nueva = await api("POST", "/api/carpintero/login", { json: { email: c.email, password: "clave12345" } })
+        assert.equal((await api("GET", "/api/carpintero/perfil", { token: nueva.datos.token })).status, 200)
+        assert.equal(nueva.datos.tokenVersion, undefined)
+    })
+
+    test("cambiar o restablecer la contraseña cierra las demás sesiones", async () => {
+        const c = await crearCarpintero()
+        const otra = (await api("POST", "/api/carpintero/login", { json: { email: c.email, password: "clave12345" } })).datos.token
+
+        const cambio = await api("PUT", `/api/carpintero/actualizarpassword/${c.id}`, {
+            token: c.token, json: { passwordactual: "clave12345", passwordnuevo: "otraclave123" },
+        })
+        assert.equal(cambio.status, 200)
+        assert.equal((await api("GET", "/api/carpintero/perfil", { token: c.token })).status, 401)
+        assert.equal((await api("GET", "/api/carpintero/perfil", { token: otra })).status, 401)
+        // El token nuevo de la respuesta mantiene viva la sesión que hizo el cambio
+        assert.equal((await api("GET", "/api/carpintero/perfil", { token: cambio.datos.token })).status, 200)
+    })
+
+    test("un usuario desactivado pierde el acceso aunque su token no haya vencido", async () => {
+        const c = await crearCliente()
+        assert.equal((await api("GET", "/api/cliente/perfil", { token: c.token })).status, 200)
+        const actual = db.collection("clientes").datos.get(c.id)
+        db.collection("clientes").datos.set(c.id, { ...actual, status: false })
+        assert.equal((await api("GET", "/api/cliente/perfil", { token: c.token })).status, 403)
+    })
+})
+
+describe("Contraseña temporal y recuperación de clientes", () => {
+    const crearClienteTemporal = async (email, password) => {
+        const { default: Cliente } = await import("../src/models/Cliente.js")
+        return Cliente.crear({ nombre: "Temp", apellido: "Cliente", email, password: await encryptPassword(password), passwordTemporal: true })
+    }
+
+    test("con contraseña temporal solo se puede ver el perfil, cambiarla o cerrar sesión", async () => {
+        await crearClienteTemporal("temporal@test.com", "CLITEMPORAL1")
+        const login = await api("POST", "/api/cliente/login", { json: { email: "temporal@test.com", password: "CLITEMPORAL1" } })
+        assert.equal(login.status, 200)
+        assert.equal(login.datos.passwordTemporal, true)
+        const token = login.datos.token
+
+        for (const [metodo, ruta] of [["GET", "/api/proyecto/listar"], ["GET", "/api/mueble"], ["GET", "/api/models"], ["POST", "/api/estado/pagar"]]) {
+            const r = await api(metodo, ruta, { token })
+            assert.equal(r.status, 403, `${metodo} ${ruta}`)
+            assert.equal(r.datos.cambiarPassword, true)
+        }
+        assert.equal((await api("GET", "/api/cliente/perfil", { token })).status, 200)
+
+        // Validaciones del cambio
+        const put = (json) => api("PUT", "/api/cliente/actualizarpassword", { token, json })
+        assert.equal((await put({ passwordactual: "CLITEMPORAL1" })).status, 400)
+        assert.equal((await put({ passwordactual: "mala", passwordnuevo: "definitiva123" })).status, 400)
+        assert.equal((await put({ passwordactual: "CLITEMPORAL1", passwordnuevo: "corta" })).status, 400)
+        assert.equal((await put({ passwordactual: "CLITEMPORAL1", passwordnuevo: "CLITEMPORAL1" })).status, 400)
+
+        const cambio = await put({ passwordactual: "CLITEMPORAL1", passwordnuevo: "definitiva123" })
+        assert.equal(cambio.status, 200)
+        assert.equal((await api("GET", "/api/mueble", { token })).status, 401, "el token temporal ya no vale")
+        assert.equal((await api("GET", "/api/mueble", { token: cambio.datos.token })).status, 200)
+        const relogin = await api("POST", "/api/cliente/login", { json: { email: "temporal@test.com", password: "definitiva123" } })
+        assert.equal(relogin.datos.passwordTemporal, false)
+    })
+
+    test("recuperar contraseña: respuesta idéntica exista o no el correo, token que vence y sesiones cerradas", async () => {
+        const c = await crearCliente()
+        const generica = await api("POST", "/api/cliente/recuperarpassword", { json: { email: "no-existe@test.com" } })
+        const real = await api("POST", "/api/cliente/recuperarpassword", { json: { email: c.email } })
+        assert.equal(generica.status, 200)
+        assert.equal(real.status, 200)
+        assert.deepEqual(generica.datos, real.datos)
+        assert.equal((await api("POST", "/api/cliente/recuperarpassword", { json: { email: "no-es-correo" } })).status, 400)
+
+        const doc = db.collection("clientes").datos.get(c.id)
+        assert.ok(doc.token, "se guardó el token de recuperación")
+        assert.equal((await api("GET", `/api/cliente/recuperarpassword/${doc.token}`)).status, 200)
+        assert.equal((await api("GET", "/api/cliente/recuperarpassword/token-inventado")).status, 404)
+        assert.equal((await api("POST", `/api/cliente/nuevopassword/${doc.token}`, { json: { password: "nueva12345", confirmpassword: "distinta123" } })).status, 400)
+
+        const nuevo = await api("POST", `/api/cliente/nuevopassword/${doc.token}`, { json: { password: "nueva12345", confirmpassword: "nueva12345" } })
+        assert.equal(nuevo.status, 200)
+        assert.equal((await api("GET", "/api/cliente/perfil", { token: c.token })).status, 401, "las sesiones anteriores se cierran")
+        assert.equal((await api("POST", "/api/cliente/login", { json: { email: c.email, password: "nueva12345" } })).status, 200)
+        // El token se consume
+        assert.equal((await api("POST", `/api/cliente/nuevopassword/${doc.token}`, { json: { password: "otra123456", confirmpassword: "otra123456" } })).status, 404)
+
+        await api("POST", "/api/cliente/recuperarpassword", { json: { email: c.email } })
+        const vigente = db.collection("clientes").datos.get(c.id)
+        db.collection("clientes").datos.set(c.id, { ...vigente, tokenExpira: new Date(Date.now() - 1000) })
+        assert.equal((await api("GET", `/api/cliente/recuperarpassword/${vigente.token}`)).status, 404)
+    })
+})
+
+describe("Planes: propiedad y aprobación", () => {
+    const crearPlano = (token, nombre = "Plano") =>
+        api("POST", "/api/plans", { token, form: formulario({ name: nombre }, { image: { nombre: "p.png", contenido: PNG, tipo: "image/png" } }) })
+
+    test("solo carpinteros aprobados y administradores crean planos; la lectura es pública", async () => {
+        const aprobado = await crearCarpintero({ aprobar: true })
+        const pendiente = await crearCarpintero()
+        const cliente = await crearCliente()
+        assert.equal((await crearPlano(pendiente.token)).status, 403)
+        assert.equal((await crearPlano(cliente.token)).status, 403)
+        const creado = await crearPlano(aprobado.token, "Casa A")
+        assert.equal(creado.status, 201)
+        assert.equal(creado.datos.creadoPor, aprobado.id)
+        assert.equal((await api("GET", "/api/plans")).status, 200)
+        assert.equal((await api("GET", `/api/plans/${creado.datos._id}`)).status, 200)
+    })
+
+    test("solo el creador o un administrador modifican y borran un plano", async () => {
+        const dueno = await crearCarpintero({ aprobar: true })
+        const otro = await crearCarpintero({ aprobar: true })
+        const rechazado = await crearCarpintero()
+        const admin = await tokenAdmin()
+        const plano = (await crearPlano(dueno.token, "Casa B")).datos
+
+        assert.equal((await api("PUT", `/api/plans/${plano._id}`, { token: otro.token, json: { name: "Hack" } })).status, 403)
+        assert.equal((await api("DELETE", `/api/plans/${plano._id}`, { token: otro.token })).status, 403)
+        assert.equal((await api("PUT", `/api/plans/${plano._id}`, { token: rechazado.token, json: { name: "Hack" } })).status, 403)
+        assert.equal((await api("GET", `/api/plans/${plano._id}`)).datos.name, "Casa B")
+
+        assert.equal((await api("PUT", `/api/plans/${plano._id}`, { token: dueno.token, json: { name: "Casa B2" } })).status, 200)
+        assert.equal((await api("PUT", `/api/plans/${plano._id}`, { token: admin, json: { name: "Casa B3" } })).status, 200)
+        assert.equal((await api("DELETE", `/api/plans/${plano._id}`, { token: dueno.token })).status, 200)
+    })
+
+    test("un plano anterior al control (sin propietario) solo lo gestiona un administrador", async () => {
+        const carpintero = await crearCarpintero({ aprobar: true })
+        const admin = await tokenAdmin()
+        db.collection("planos").datos.set("planoheredado", { name: "Heredado", image_path: null })
+        assert.equal((await api("PUT", "/api/plans/planoheredado", { token: carpintero.token, json: { name: "Mío" } })).status, 403)
+        assert.equal((await api("DELETE", "/api/plans/planoheredado", { token: carpintero.token })).status, 403)
+        assert.equal((await api("PUT", "/api/plans/planoheredado", { token: admin, json: { name: "Admin" } })).status, 200)
+    })
+})
+
+describe("Carpinteros sin aprobar y rutas retiradas", () => {
+    test("un carpintero pendiente no opera sobre proyectos ni estados", async () => {
+        const pendiente = await crearCarpintero()
+        for (const [metodo, ruta] of [
+            ["GET", "/api/proyecto/listar"], ["GET", "/api/proyecto/requerimientos"], ["GET", "/api/proyecto/requerimientos/x"],
+            ["GET", "/api/proyecto/detalle/x"], ["DELETE", "/api/proyecto/eliminar/x"], ["PUT", "/api/proyecto/actualizar/x"],
+            ["POST", "/api/estado/registro"], ["DELETE", "/api/estado/eliminar/x"],
+        ]) {
+            assert.equal((await api(metodo, ruta, { token: pendiente.token })).status, 403, `${metodo} ${ruta}`)
+        }
+        // Pero sí puede ver su perfil y cargar el CV para ser aprobado
+        assert.equal((await api("GET", "/api/carpintero/perfil", { token: pendiente.token })).status, 200)
+    })
+
+    test("las rutas de diagnóstico y el proxy de muebles ya no existen", async () => {
+        for (const ruta of ["/api/routes", "/api/proyecto/test", "/api/v1/furniture", "/api/v1/furniture/1"]) {
+            assert.equal((await api("GET", ruta)).status, 404, ruta)
+        }
+        const ping = await api("GET", "/api/ping")
+        assert.equal(ping.status, 200)
+        assert.equal(ping.datos.env, undefined)
+    })
+})
+
+describe("Cabeceras, CORS, subidas y errores", () => {
+    test("CORS solo responde a orígenes de la lista y helmet añade sus cabeceras", async () => {
+        const permitido = await crudo("GET", "/api/ping", { Origin: "https://rob1e.netlify.app" })
+        assert.equal(permitido.headers["access-control-allow-origin"], "https://rob1e.netlify.app")
+        const ajeno = await crudo("GET", "/api/ping", { Origin: "https://sitio-malicioso.example" })
+        assert.equal(ajeno.headers["access-control-allow-origin"], undefined)
+        const preflight = await crudo("OPTIONS", "/api/proyecto/listar", {
+            Origin: "https://sitio-malicioso.example", "Access-Control-Request-Method": "GET",
+        })
+        assert.equal(preflight.headers["access-control-allow-origin"], undefined)
+
+        assert.equal(permitido.headers["x-powered-by"], undefined)
+        assert.equal(permitido.headers["x-content-type-options"], "nosniff")
+
+        // CORS_ORIGINS reemplaza la lista por defecto
+        process.env.CORS_ORIGINS = "https://otro-frontend.example/"
+        try {
+            assert.equal((await crudo("GET", "/api/ping", { Origin: "https://otro-frontend.example" })).headers["access-control-allow-origin"], "https://otro-frontend.example")
+            assert.equal((await crudo("GET", "/api/ping", { Origin: "https://rob1e.netlify.app" })).headers["access-control-allow-origin"], undefined)
+        } finally {
+            delete process.env.CORS_ORIGINS
+        }
+    })
+
+    test("un usuario anónimo no puede dejar archivos en el servidor", async () => {
+        const antes = archivosEnUploads()
+        const form = () => formulario({ email: "x@test.com", password: "123" }, { archivo: { nombre: "grande.bin", contenido: Buffer.alloc(200000), tipo: "application/octet-stream" } })
+        await api("POST", "/api/carpintero/login", { form: form() })
+        await api("POST", "/api/cliente/registro", { form: form() })
+        await api("POST", "/api/cliente/login", { form: form() })
+        await api("POST", "/api/no-existe", { form: form() })
+        // Autenticado pero sin permiso: tampoco se reciben los archivos
+        const cliente = await crearCliente()
+        assert.equal((await api("POST", "/api/carpintero/cv", { token: cliente.token, form: form() })).status, 403)
+        assert.equal((await api("POST", "/api/mueble", { token: cliente.token, form: form() })).status, 403)
+        assert.equal(archivosEnUploads(), antes)
+    })
+
+    test("los errores no revelan mensajes internos y los IDs raros dan 404", async () => {
+        const carpintero = await crearCarpintero({ aprobar: true })
+        for (const id of ["a%2Fb", "a%2Fb%2Fc", "..%2F..%2Fx", "%20", "x".repeat(300)]) {
+            const r = await api("GET", `/api/proyecto/detalle/${id}`, { token: carpintero.token })
+            assert.equal(r.status, 404, `detalle/${id}`)
+        }
+        assert.equal((await api("GET", "/api/plans/a%2Fb")).status, 404)
+        assert.equal((await api("GET", "/api/mueble/a%2Fb", { token: carpintero.token })).status, 404)
+
+        const res = await fetch(`${base}/api/carpintero/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{no es json" })
+        const cuerpo = await res.json()
+        assert.equal(res.status, 400)
+        assert.doesNotMatch(JSON.stringify(cuerpo), /Unexpected|JSON\.parse|at /)
+    })
+})
+
+describe("Pagos: sin cobros duplicados", () => {
+    test("la reserva transaccional deja pasar a una sola petición concurrente", async () => {
+        const { reservar, liberar } = await import("../src/helpers/firestore.js")
+        db.collection("estados").datos.set("estadoreserva", { estadoPago: "Pendiente" })
+        const resultados = await Promise.all(Array.from({ length: 5 }, () => reservar("estados", "estadoreserva", "pagoEnCurso", 60000)))
+        assert.equal(resultados.filter(Boolean).length, 1)
+        await liberar("estados", "estadoreserva", "pagoEnCurso")
+        assert.equal(await reservar("estados", "estadoreserva", "pagoEnCurso", 60000), true)
+        assert.equal(await reservar("estados", "no-existe", "pagoEnCurso", 60000), false)
+    })
+
+    test("pagar un estado con un cobro en curso responde 409 sin llamar a Stripe", async () => {
+        const carpintero = await crearCarpintero({ aprobar: true })
+        const cliente = await crearCliente()
+        const proyecto = (await api("POST", "/api/proyecto/solicitar", {
+            token: cliente.token,
+            form: formulario({ nombreProyecto: "Mesa", descripcionProyecto: "Mesa de centro", fechaEntrega: futuro(), carpintero: carpintero.id }),
+        })).datos.proyecto
+        await api("POST", "/api/estado/registro", { token: carpintero.token, json: { proyecto: proyecto._id, nombre: "Inicio", detalle: "Anticipo", prioridad: "Alta", precio: 50 } })
+        const estadoId = (await api("GET", `/api/proyecto/detalle/${proyecto._id}`, { token: cliente.token })).datos.estados[0]._id
+
+        const actual = db.collection("estados").datos.get(estadoId)
+        db.collection("estados").datos.set(estadoId, { ...actual, pagoEnCurso: new Date(Date.now() + 60000) })
+        const r = await api("POST", "/api/estado/pagar", { token: cliente.token, json: { paymentMethodId: "pm_card_visa", estadoId } })
+        assert.equal(r.status, 409)
+    })
+})
+
+describe("Socket.IO: autenticación, salas y mensajes", () => {
+    let httpServer, io, url
+    const sockets = []
+
+    before(async () => {
+        const { chatSocket } = await import("../src/sockets/chat.socket.js")
+        httpServer = http.createServer()
+        io = new Server(httpServer)
+        chatSocket(io)
+        await new Promise((r) => httpServer.listen(0, r))
+        url = `http://127.0.0.1:${httpServer.address().port}`
+    })
+
+    after(async () => {
+        sockets.forEach((s) => s.close())
+        io.close()
+        await new Promise((r) => httpServer.close(r))
+    })
+
+    const conectar = (token) =>
+        new Promise((resolve, reject) => {
+            const s = clienteSocket(url, { transports: ["websocket"], auth: token ? { token } : {}, reconnection: false })
+            sockets.push(s)
+            s.on("connect", () => resolve(s))
+            s.on("connect_error", (e) => reject(e))
+        })
+    const emitir = (s, evento, ...args) => new Promise((resolve) => s.emit(evento, ...args, resolve))
+    const siguiente = (s, evento, ms = 1000) =>
+        new Promise((resolve) => {
+            const t = setTimeout(() => resolve(null), ms)
+            s.once(evento, (d) => { clearTimeout(t); resolve(d) })
+        })
+
+    test("sin token o con token inválido la conexión se rechaza", async () => {
+        await assert.rejects(conectar(null), /No autorizado/)
+        await assert.rejects(conectar("token.falso.xyz"), /No autorizado/)
+        const c = await crearCarpintero()
+        await api("POST", "/api/auth/logout", { token: c.token })
+        await assert.rejects(conectar(c.token), /No autorizado/, "un token cerrado con logout tampoco conecta")
+    })
+
+    test("solo los participantes del proyecto entran a la sala y reciben los mensajes", async () => {
+        const carpintero = await crearCarpintero({ aprobar: true })
+        const ajeno = await crearCarpintero({ aprobar: true })
+        const cliente = await crearCliente()
+        const otroCliente = await crearCliente()
+        const proyecto = (await api("POST", "/api/proyecto/solicitar", {
+            token: cliente.token,
+            form: formulario({ nombreProyecto: "Chat", descripcionProyecto: "Proyecto con chat", fechaEntrega: futuro(), carpintero: carpintero.id }),
+        })).datos.proyecto
+
+        const sCarp = await conectar(carpintero.token)
+        const sCli = await conectar(cliente.token)
+        const sAjeno = await conectar(ajeno.token)
+        const sOtroCli = await conectar(otroCliente.token)
+
+        assert.equal((await emitir(sCarp, "unirse-proyecto", proyecto._id)).ok, true)
+        assert.equal((await emitir(sCli, "unirse-proyecto", proyecto._id)).ok, true)
+        assert.equal((await emitir(sAjeno, "unirse-proyecto", proyecto._id)).ok, false)
+        assert.equal((await emitir(sOtroCli, "unirse-proyecto", proyecto._id)).ok, false)
+        assert.equal((await emitir(sCli, "unirse-proyecto", "a/b")).ok, false)
+        assert.equal((await emitir(sCli, "unirse-proyecto", { $ne: null })).ok, false)
+
+        // Mensaje válido: llega al otro participante con el remitente tomado del token, no del payload
+        const recibido = siguiente(sCarp, "enviar-mensaje-front-back")
+        const espiaAjeno = siguiente(sAjeno, "enviar-mensaje-front-back", 600)
+        const espiaOtroCli = siguiente(sOtroCli, "enviar-mensaje-front-back", 600)
+        const ack = await emitir(sCli, "enviar-mensaje-front-back", { proyecto: proyecto._id, body: "  Hola  ", from: "Administrador falso" })
+        assert.equal(ack.ok, true)
+        const mensaje = await recibido
+        assert.equal(mensaje.body, "Hola")
+        assert.equal(mensaje.rol, "cliente")
+        assert.equal(mensaje.from, "Ana Lopez")
+        assert.equal(mensaje.proyecto, proyecto._id)
+        assert.equal(await espiaAjeno, null, "un tercero no recibe nada")
+        assert.equal(await espiaOtroCli, null)
+
+        // Sin haberse unido, con payload inválido o demasiado largo: se rechaza
+        assert.equal((await emitir(sAjeno, "enviar-mensaje-front-back", { proyecto: proyecto._id, body: "intruso" })).ok, false)
+        assert.equal((await emitir(sCli, "enviar-mensaje-front-back", "texto suelto")).ok, false)
+        assert.equal((await emitir(sCli, "enviar-mensaje-front-back", null)).ok, false)
+        assert.equal((await emitir(sCli, "enviar-mensaje-front-back", { proyecto: proyecto._id, body: "" })).ok, false)
+        assert.equal((await emitir(sCli, "enviar-mensaje-front-back", { proyecto: proyecto._id, body: { x: 1 } })).ok, false)
+        assert.equal((await emitir(sCli, "enviar-mensaje-front-back", { proyecto: proyecto._id, body: "x".repeat(1001) })).ok, false)
+    })
+
+    test("un cliente con contraseña temporal no puede conectarse", async () => {
+        const { default: Cliente } = await import("../src/models/Cliente.js")
+        await Cliente.crear({ nombre: "T", apellido: "C", email: "socket-temp@test.com", password: await encryptPassword("CLITEMPORAL2"), passwordTemporal: true })
+        const login = await api("POST", "/api/cliente/login", { json: { email: "socket-temp@test.com", password: "CLITEMPORAL2" } })
+        await assert.rejects(conectar(login.datos.token), /contraseña temporal/)
+    })
+})
+
+// Debe ir al final: el límite de intentos bloquea la IP de las pruebas durante la ventana
+describe("Rate limiting", () => {
+    test("los inicios de sesión se bloquean tras demasiados intentos fallidos", async () => {
+        process.env.RATE_LIMIT_DISABLED = "false"
+        try {
+            const intento = () => api("POST", "/api/cliente/login", { json: { email: "fuerza-bruta@test.com", password: "incorrecta" } })
+            const estados = []
+            for (let i = 0; i < 12; i++) estados.push((await intento()).status)
+            assert.deepEqual(estados.slice(0, 10), Array(10).fill(404))
+            assert.deepEqual(estados.slice(10), [429, 429])
+            const bloqueado = await api("POST", "/api/cliente/login", { json: { email: "fuerza-bruta@test.com", password: "incorrecta" } })
+            assert.match(bloqueado.datos.msg, /Demasiados intentos/)
+            // Las rutas que no son de login no se ven afectadas por este límite
+            assert.equal((await api("GET", "/api/ping")).status, 200)
+        } finally {
+            process.env.RATE_LIMIT_DISABLED = "true"
+        }
     })
 })

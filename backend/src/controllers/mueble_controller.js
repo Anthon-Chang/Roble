@@ -79,7 +79,7 @@ export const crearMueble = async (req, res) => {
         res.status(201).json({ msg: "Mueble registrado correctamente", mueble })
     } catch (error) {
         console.error(error)
-        res.status(500).json({ msg: `❌ Error en el servidor - ${error.message}` })
+        res.status(500).json({ msg: "❌ Error en el servidor" })
     } finally {
         await limpiarTemporales(req.files)
     }
@@ -94,7 +94,7 @@ export const listarMisMuebles = async (req, res) => {
         res.status(200).json(masRecientesPrimero(muebles))
     } catch (error) {
         console.error(error)
-        res.status(500).json({ msg: `❌ Error en el servidor - ${error.message}` })
+        res.status(500).json({ msg: "❌ Error en el servidor" })
     }
 }
 
@@ -109,7 +109,7 @@ export const listarMuebles = async (req, res) => {
         res.status(200).json(masRecientesPrimero(muebles))
     } catch (error) {
         console.error(error)
-        res.status(500).json({ msg: `❌ Error en el servidor - ${error.message}` })
+        res.status(500).json({ msg: "❌ Error en el servidor" })
     }
 }
 
@@ -129,7 +129,7 @@ export const detalleMueble = async (req, res) => {
         res.status(200).json(mueble)
     } catch (error) {
         console.error(error)
-        res.status(500).json({ msg: `❌ Error en el servidor - ${error.message}` })
+        res.status(500).json({ msg: "❌ Error en el servidor" })
     }
 }
 
@@ -180,7 +180,7 @@ export const actualizarMueble = async (req, res) => {
         res.status(200).json({ msg: "Mueble actualizado correctamente", mueble: actualizado })
     } catch (error) {
         console.error(error)
-        res.status(500).json({ msg: `❌ Error en el servidor - ${error.message}` })
+        res.status(500).json({ msg: "❌ Error en el servidor" })
     } finally {
         await limpiarTemporales(req.files)
     }
@@ -199,6 +199,6 @@ export const eliminarMueble = async (req, res) => {
         res.status(200).json({ msg: "Mueble eliminado correctamente" })
     } catch (error) {
         console.error(error)
-        res.status(500).json({ msg: `❌ Error en el servidor - ${error.message}` })
+        res.status(500).json({ msg: "❌ Error en el servidor" })
     }
 }
