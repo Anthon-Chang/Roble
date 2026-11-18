@@ -10,10 +10,17 @@ import {
 } from "../helpers/password.js"
 import { sendMailToRecoveryPassword } from "../helpers/sendMail.js"
 import { masRecientesPrimero, sinSecretos } from "../helpers/firestore.js"
+import {
+    combinar,
+    validarApellido,
+    validarCedula,
+    validarCelular,
+    validarLongitudEmail,
+    validarNombre,
+    validarPassword,
+} from "../helpers/validaciones.js"
 
-const PASSWORD_MINIMO = 8
 const HORA_MS = 60 * 60 * 1000
-const cedulaValida = (cedula) => /^\d{10}$/.test(String(cedula).trim())
 
 // =============================
 // REGISTRO DEL CLIENTE (HU-005)
@@ -21,37 +28,37 @@ const cedulaValida = (cedula) => /^\d{10}$/.test(String(cedula).trim())
 // =============================
 export const registroCliente = async (req, res) => {
     try {
-        const { nombre, apellido, email, password, cedula, celular } = req.body
+        const body = req.body || {}
+        const { email, password } = body
 
-        for (const valor of [nombre, apellido, email, password]) {
-            if (typeof valor !== "string" || valor.trim() === "") {
-                return res.status(400).json({ msg: "Debes llenar todos los campos obligatorios (nombre, apellido, email y password)" })
-            }
-        }
-        if (!emailValido(email)) {
-            return res.status(400).json({ msg: "El formato del correo electrónico no es válido" })
-        }
-        if (password.length < PASSWORD_MINIMO) {
-            return res.status(400).json({ msg: `El password debe tener al menos ${PASSWORD_MINIMO} caracteres` })
-        }
-        if (cedula && !cedulaValida(cedula)) {
-            return res.status(400).json({ msg: "La cédula debe tener 10 dígitos" })
-        }
+        // Se valida todo el formulario (en el orden del formulario) antes de tocar la base de datos
+        const { valores, error } = combinar({
+            nombre: validarNombre(body.nombre),
+            apellido: validarApellido(body.apellido),
+            email: emailValido(email)
+                ? validarLongitudEmail(email)
+                : { error: "El formato del correo electrónico no es válido" },
+            password: validarPassword(password),
+            cedula: validarCedula(body.cedula),
+            celular: validarCelular(body.celular),
+        })
+        if (error) return res.status(400).json({ msg: error })
+        const { nombre, apellido, cedula, celular } = valores
 
         if (await Cliente.porEmail(email)) {
             return res.status(400).json({ msg: "El email ya se encuentra registrado" })
         }
-        if (cedula && (await Cliente.porCedula(cedula))) {
+        if (await Cliente.porCedula(cedula)) {
             return res.status(400).json({ msg: "La cédula ya se encuentra registrada" })
         }
 
         await Cliente.crear({
-            nombre: nombre.trim(),
-            apellido: apellido.trim(),
+            nombre,
+            apellido,
             email,
             password: await encryptPassword(password),
-            cedula: cedula ? String(cedula).trim() : "",
-            celular: celular ? String(celular).trim() : "",
+            cedula,
+            celular,
         })
 
         res.status(201).json({ msg: "Cuenta creada correctamente, ya puedes iniciar sesión" })
@@ -96,8 +103,29 @@ export const loginCliente = async (req, res) => {
     }
 }
 
-export const perfilCliente = (req, res) => {
-    res.status(200).json(sinSecretos(req.user))
+// Perfil completo del cliente. Incluye los campos propios (nombre, apellido, email, cedula, celular)
+// y los nombres con sufijo "Cliente" que lee la tarjeta de perfil del frontend, más su proyecto más reciente.
+const armarPerfil = async (cliente) => {
+    const proyectos = masRecientesPrimero(await Proyecto.listar({ cliente: cliente._id, estadoProyecto: true }))
+    return {
+        ...sinSecretos(cliente),
+        rol: "cliente",
+        nombreCliente: `${cliente.nombre || ""} ${cliente.apellido || ""}`.trim(),
+        emailCliente: normalizarEmail(cliente.email),
+        cedulaCliente: cliente.cedula || "",
+        celularCliente: cliente.celular || "",
+        nombreProyecto: proyectos[0]?.nombreProyecto ?? null,
+        totalProyectos: proyectos.length,
+    }
+}
+
+export const perfilCliente = async (req, res) => {
+    try {
+        res.status(200).json(await armarPerfil(req.user))
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({ msg: "❌ Error en el servidor" })
+    }
 }
 
 // =============================
@@ -110,9 +138,8 @@ export const actualizarPasswordCliente = async (req, res) => {
         if (typeof passwordactual !== "string" || typeof passwordnuevo !== "string" || !passwordactual || !passwordnuevo) {
             return res.status(400).json({ msg: "Debes llenar todos los campos" })
         }
-        if (passwordnuevo.length < PASSWORD_MINIMO) {
-            return res.status(400).json({ msg: `El password debe tener al menos ${PASSWORD_MINIMO} caracteres` })
-        }
+        const errorPassword = validarPassword(passwordnuevo).error
+        if (errorPassword) return res.status(400).json({ msg: errorPassword })
         if (passwordnuevo === passwordactual) {
             return res.status(400).json({ msg: "El password nuevo debe ser distinto al actual" })
         }
@@ -186,9 +213,8 @@ export const crearNuevoPasswordCliente = async (req, res) => {
             return res.status(400).json({ msg: "Debes llenar todos los campos" })
         }
         if (password !== confirmpassword) return res.status(400).json({ msg: "Los passwords no coinciden" })
-        if (password.length < PASSWORD_MINIMO) {
-            return res.status(400).json({ msg: `El password debe tener al menos ${PASSWORD_MINIMO} caracteres` })
-        }
+        const errorPassword = validarPassword(password).error
+        if (errorPassword) return res.status(400).json({ msg: errorPassword })
 
         const cliente = await Cliente.porToken(req.params.token)
         if (!tokenVigente(cliente)) return res.status(404).json({ msg: "No se puede validar la cuenta" })
@@ -233,14 +259,5 @@ export const loginClienteProyecto = async (req, res) => {
     }
 }
 
-export const perfilClienteProyecto = (req, res) => {
-    const c = req.user
-    res.json({
-        _id: c._id,
-        nombreCliente: `${c.nombre} ${c.apellido}`.trim(),
-        emailCliente: normalizarEmail(c.email),
-        cedulaCliente: c.cedula,
-        celularCliente: c.celular,
-        rol: "cliente",
-    })
-}
+// Compatibilidad: ruta antigua del perfil (/api/proyecto/perfil), mismo contenido que /api/cliente/perfil
+export const perfilClienteProyecto = perfilCliente

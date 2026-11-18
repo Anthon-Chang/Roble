@@ -7,18 +7,16 @@ import { subirArchivo, subirBase64, eliminarArchivo } from "../helpers/storage.j
 import { limpiarTemporales, validarImagen } from "../helpers/archivos.js"
 import { crearPasswordTemporal, emailValido, encryptPassword } from "../helpers/password.js"
 import { masRecientesPrimero } from "../helpers/firestore.js"
+import {
+    combinar,
+    leerFechaEntrega,
+    validarCedula,
+    validarCelular,
+    validarLongitudEmail,
+    validarNombreCompleto,
+} from "../helpers/validaciones.js"
 
 const texto = (valor) => (typeof valor === "string" ? valor.trim() : "")
-
-// Valida la fecha de entrega: debe ser una fecha válida y no estar en el pasado.
-const leerFechaEntrega = (valor) => {
-    const fecha = new Date(valor)
-    if (Number.isNaN(fecha.getTime())) return { error: "La fecha de entrega no es válida" }
-    const hoy = new Date()
-    hoy.setHours(0, 0, 0, 0)
-    if (fecha < hoy) return { error: "La fecha de entrega no puede estar en el pasado" }
-    return { fecha }
-}
 
 // Sube la imagen física (multipart) y/o la imagen generada con IA (base64). Devuelve los campos a guardar.
 const procesarImagenes = async (req) => {
@@ -135,26 +133,29 @@ const solicitarProyecto = async (req, res) => {
 const registrarProyecto = async (req, res) => {
     let imagenes = {}
     try {
-        for (const campo of ["nombreCliente", "cedulaCliente", "emailCliente", "celularCliente"]) {
-            if (!texto(req.body[campo])) return res.status(400).json({ msg: `Debes llenar el campo ${campo}` })
-        }
+        const { valores: formCliente, error: errorCliente } = combinar({
+            nombreCliente: validarNombreCompleto(req.body.nombreCliente),
+            cedulaCliente: validarCedula(req.body.cedulaCliente, "La cédula del cliente"),
+            emailCliente: emailValido(req.body.emailCliente)
+                ? validarLongitudEmail(req.body.emailCliente)
+                : { error: "El formato del correo del cliente no es válido" },
+            celularCliente: validarCelular(req.body.celularCliente, "El celular del cliente"),
+        })
+        if (errorCliente) return res.status(400).json({ msg: errorCliente })
         const { datos, error } = leerDatosProyecto(req.body)
         if (error) return res.status(400).json({ msg: error })
-        if (!emailValido(req.body.emailCliente)) {
-            return res.status(400).json({ msg: "El formato del correo del cliente no es válido" })
-        }
 
         // Cliente existente o nuevo con contraseña temporal
         let cliente = await Cliente.porEmail(req.body.emailCliente)
         let passwordTemporal = null
         if (!cliente) {
-            const [nombre, ...resto] = texto(req.body.nombreCliente).split(/\s+/)
+            const [nombre, ...resto] = formCliente.nombreCliente.split(" ")
             passwordTemporal = crearPasswordTemporal()
             cliente = await Cliente.crear({
                 nombre,
                 apellido: resto.join(" "),
-                cedula: texto(req.body.cedulaCliente),
-                celular: texto(req.body.celularCliente),
+                cedula: formCliente.cedulaCliente,
+                celular: formCliente.celularCliente,
                 email: req.body.emailCliente,
                 password: await encryptPassword(passwordTemporal),
                 passwordTemporal: true,
@@ -167,9 +168,9 @@ const registrarProyecto = async (req, res) => {
             ...imagenes,
             ...datosCliente(cliente),
             // Se conservan los datos que escribió el carpintero para este proyecto
-            nombreCliente: texto(req.body.nombreCliente),
-            cedulaCliente: texto(req.body.cedulaCliente),
-            celularCliente: texto(req.body.celularCliente),
+            nombreCliente: formCliente.nombreCliente,
+            cedulaCliente: formCliente.cedulaCliente,
+            celularCliente: formCliente.celularCliente,
             carpintero: req.user._id,
         })
 
@@ -295,6 +296,18 @@ const actualizarProyecto = async (req, res) => {
             if (req.body[campo] === undefined) continue
             if (!texto(req.body[campo])) return res.status(400).json({ msg: `Debes llenar el campo ${campo}` })
             cambios[campo] = texto(req.body[campo])
+        }
+        // Los datos del cliente siguen las mismas reglas que al registrar el proyecto
+        const reglasCliente = {
+            nombreCliente: (v) => validarNombreCompleto(v),
+            cedulaCliente: (v) => validarCedula(v, "La cédula del cliente"),
+            celularCliente: (v) => validarCelular(v, "El celular del cliente"),
+        }
+        for (const [campo, validar] of Object.entries(reglasCliente)) {
+            if (cambios[campo] === undefined) continue
+            const r = validar(cambios[campo])
+            if (r.error) return res.status(400).json({ msg: r.error })
+            cambios[campo] = r.valor
         }
         if (cambios.fechaEntrega !== undefined) {
             const { fecha, error } = leerFechaEntrega(cambios.fechaEntrega)

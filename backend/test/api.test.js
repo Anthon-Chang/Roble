@@ -82,7 +82,7 @@ const crearCarpintero = async ({ aprobar = false, cv = true } = {}) => {
     contador++
     const email = `carp${contador}@test.com`
     const registro = await api("POST", "/api/carpintero/registro", {
-        json: { nombre: "Juan", apellido: `Perez${contador}`, email, password: "clave12345", celular: "0999999999" },
+        json: { nombre: "Juan", apellido: "Perez", direccion: "Av. Amazonas 123", celular: "0999999999", email, password: "clave12345" },
     })
     assert.equal(registro.status, 201)
     const doc = [...db.collection("carpinteros").datos.entries()].find(([, d]) => d.email === email)
@@ -133,7 +133,7 @@ const crearCliente = async () => {
 describe("HU-003 Crear cuenta de carpintero", () => {
     test("no permite asignarse rol ni aprobación al registrarse", async () => {
         const r = await api("POST", "/api/carpintero/registro", {
-            json: { nombre: "Mal", apellido: "Actor", email: "malo@test.com", password: "clave12345", rol: "administrador", estadoAprobacion: "aprobado", confirmEmail: true },
+            json: { nombre: "Mal", apellido: "Actor", direccion: "Calle Falsa 123", celular: "0999999999", email: "malo@test.com", password: "clave12345", rol: "administrador", estadoAprobacion: "aprobado", confirmEmail: true },
         })
         assert.equal(r.status, 201)
         const [, doc] = [...db.collection("carpinteros").datos.entries()].find(([, d]) => d.email === "malo@test.com")
@@ -144,7 +144,7 @@ describe("HU-003 Crear cuenta de carpintero", () => {
     })
 
     test("rechaza correo duplicado, campos faltantes, correo inválido y password corto", async () => {
-        const base = { nombre: "A", apellido: "B", email: "dup@test.com", password: "clave12345" }
+        const base = { nombre: "Ana", apellido: "Bravo", direccion: "Calle Sucre 45", celular: "0991234567", email: "dup@test.com", password: "clave12345" }
         assert.equal((await api("POST", "/api/carpintero/registro", { json: base })).status, 201)
         assert.equal((await api("POST", "/api/carpintero/registro", { json: base })).status, 400)
         assert.equal((await api("POST", "/api/carpintero/registro", { json: { ...base, email: "x@test.com", nombre: "" } })).status, 400)
@@ -153,7 +153,7 @@ describe("HU-003 Crear cuenta de carpintero", () => {
     })
 
     test("no permite iniciar sesión sin confirmar el correo", async () => {
-        await api("POST", "/api/carpintero/registro", { json: { nombre: "A", apellido: "B", email: "sinconfirmar@test.com", password: "clave12345" } })
+        await api("POST", "/api/carpintero/registro", { json: { nombre: "Ana", apellido: "Bravo", direccion: "Calle Sucre 45", celular: "0991234567", email: "sinconfirmar@test.com", password: "clave12345" } })
         const r = await api("POST", "/api/carpintero/login", { json: { email: "sinconfirmar@test.com", password: "clave12345" } })
         assert.equal(r.status, 403)
     })
@@ -1009,5 +1009,213 @@ describe("Rate limiting", () => {
         } finally {
             process.env.RATE_LIMIT_DISABLED = "true"
         }
+    })
+})
+
+// =====================================================================
+//  CORRECCIONES DE LA REVISIÓN DEL SPRINT 1 (12-11-2026)
+// =====================================================================
+
+describe("Creación de cuenta: validación del formulario", () => {
+    const registrarCliente = (cambios = {}) =>
+        api("POST", "/api/cliente/registro", {
+            json: { nombre: "Maria", apellido: "Gonzalez", email: "validacion@test.com", password: "clave12345", cedula: "1799999999", celular: "0991112233", ...cambios },
+        })
+    const registrarCarpintero = (cambios = {}) =>
+        api("POST", "/api/carpintero/registro", {
+            json: { nombre: "Pedro", apellido: "Alvarez", direccion: "Av. 10 de Agosto N24-15", celular: "0991112233", anios_experiencia: 5, email: "validacion-carp@test.com", password: "clave12345", ...cambios },
+        })
+
+    test("cliente: no acepta caracteres especiales, dígitos ni textos cortos o largos en nombre y apellido", async () => {
+        for (const nombre of ["M", "", "   ", "Maria3", "Ma<script>", "Maria!", "Maria@x", "Maria_Jose", "Maria--", "A".repeat(51), "😀😀", { $ne: 1 }, ["Maria"]]) {
+            const r = await registrarCliente({ nombre })
+            assert.equal(r.status, 400, `nombre ${JSON.stringify(nombre)}`)
+        }
+        for (const apellido of ["G", "Gonzalez1", "Gonz@lez", "<b>Gonzalez</b>", "G".repeat(51)]) {
+            assert.equal((await registrarCliente({ apellido })).status, 400, `apellido ${apellido}`)
+        }
+        assert.match((await registrarCliente({ nombre: "Maria!" })).datos.msg, /solo puede contener letras/)
+        assert.match((await registrarCliente({ nombre: "M" })).datos.msg, /al menos 2 caracteres/)
+    })
+
+    test("cliente: celular y cédula de exactamente 10 dígitos, obligatorios", async () => {
+        for (const celular of ["099111223", "09911122334", "09911122a3", "+593991112", "099 111 22", "", undefined]) {
+            const r = await registrarCliente({ celular })
+            assert.equal(r.status, 400, `celular ${JSON.stringify(celular)}`)
+        }
+        assert.match((await registrarCliente({ celular: "12345" })).datos.msg, /10 dígitos/)
+        for (const cedula of ["123456789", "12345678901", "17A9999999", "", undefined]) {
+            assert.equal((await registrarCliente({ cedula })).status, 400, `cedula ${JSON.stringify(cedula)}`)
+        }
+    })
+
+    test("cliente: valida correo y contraseña (mínimo 8 y máximo 72 bytes) y rechaza cuerpos vacíos", async () => {
+        assert.equal((await registrarCliente({ email: "no-es-correo" })).status, 400)
+        assert.equal((await registrarCliente({ email: `${"a".repeat(100)}@test.com` })).status, 400)
+        assert.equal((await registrarCliente({ password: "corta12" })).status, 400)
+        assert.equal((await registrarCliente({ password: "a".repeat(73) })).status, 400)
+        assert.equal((await api("POST", "/api/cliente/registro", { json: {} })).status, 400)
+        assert.equal((await api("POST", "/api/cliente/registro")).status, 400)
+        // Nada de lo anterior creó la cuenta
+        assert.equal([...db.collection("clientes").datos.values()].some((c) => c.email === "validacion@test.com"), false)
+    })
+
+    test("cliente: acepta tildes, ñ y nombres compuestos, y los guarda normalizados", async () => {
+        const r = await registrarCliente({ nombre: "  José   Ángel ", apellido: "Muñoz  Peña", email: "tildes@test.com", cedula: "1788888888" })
+        assert.equal(r.status, 201)
+        const doc = [...db.collection("clientes").datos.values()].find((c) => c.email === "tildes@test.com")
+        assert.equal(doc.nombre, "José Ángel")
+        assert.equal(doc.apellido, "Muñoz Peña")
+        // Duplicados de correo y cédula
+        assert.equal((await registrarCliente({ email: "tildes@test.com", cedula: "1700000099" })).status, 400)
+        assert.equal((await registrarCliente({ email: "otro-tildes@test.com", cedula: "1788888888" })).status, 400)
+    })
+
+    test("carpintero: valida todo el formulario de registro", async () => {
+        const invalidos = [
+            { nombre: "P" }, { nombre: "Pedro1" }, { apellido: "Alvarez#" }, { apellido: "" },
+            { direccion: "" }, { direccion: "Av" }, { direccion: "<script>alert(1)</script>" }, { direccion: "Calle $%& 12" }, { direccion: "x".repeat(101) },
+            { celular: "12345" }, { celular: "09911122abc" }, { celular: "" }, { celular: undefined },
+            { anios_experiencia: -1 }, { anios_experiencia: 61 }, { anios_experiencia: 2.5 }, { anios_experiencia: "muchos" },
+            { email: "no-es-correo" }, { password: "corta" },
+        ]
+        for (const cambios of invalidos) {
+            const r = await registrarCarpintero(cambios)
+            assert.equal(r.status, 400, JSON.stringify(cambios))
+        }
+        assert.equal([...db.collection("carpinteros").datos.values()].some((c) => c.email === "validacion-carp@test.com"), false)
+
+        const ok = await registrarCarpintero({ direccion: "Av. 10 de Agosto N24-15, Quito" })
+        assert.equal(ok.status, 201)
+        const doc = [...db.collection("carpinteros").datos.values()].find((c) => c.email === "validacion-carp@test.com")
+        assert.equal(doc.celular, "0991112233")
+        assert.equal(doc.anios_experiencia, 5)
+    })
+
+    test("carpintero: al editar su perfil se aplican las mismas reglas", async () => {
+        const c = await crearCarpintero()
+        const editar = (json) => api("PUT", `/api/carpintero/actualizarperfil/${c.id}`, { token: c.token, json })
+        for (const cambios of [{ nombre: "Juan3" }, { apellido: "Pe<b>rez" }, { celular: "123" }, { direccion: "<img src=x>" }, { email: "malo" }, { nombre: "" }]) {
+            assert.equal((await editar(cambios)).status, 400, JSON.stringify(cambios))
+        }
+        const ok = await editar({ nombre: "Juan Carlos", celular: "0987654321", direccion: "Calle Bolívar 12-34" })
+        assert.equal(ok.status, 200)
+        assert.equal(ok.datos.celular, "0987654321")
+    })
+
+    test("proyecto registrado por un carpintero: valida los datos del cliente", async () => {
+        const carpintero = await crearCarpintero({ aprobar: true })
+        const datos = {
+            nombreCliente: "Pedro Gomez", cedulaCliente: "1712345679", emailCliente: "validado@test.com", celularCliente: "0977777777",
+            nombreProyecto: "Escritorio", descripcionProyecto: "Escritorio de trabajo", fechaEntrega: futuro(),
+        }
+        const registrar = (cambios) => api("POST", "/api/proyecto/registro", { token: carpintero.token, form: formulario({ ...datos, ...cambios }) })
+        for (const cambios of [
+            { nombreCliente: "Pedro <b>" }, { nombreCliente: "Pedro 123" }, { nombreCliente: "Pe" },
+            { celularCliente: "123" }, { celularCliente: "09777777a7" }, { cedulaCliente: "12345" }, { emailCliente: "malo" },
+        ]) {
+            assert.equal((await registrar(cambios)).status, 400, JSON.stringify(cambios))
+        }
+        assert.equal((await registrar({})).status, 201)
+
+        // Al actualizar el proyecto rigen las mismas reglas
+        const proyecto = [...db.collection("proyectos").datos.entries()].find(([, p]) => p.emailCliente === "validado@test.com")
+        const editar = (cambios) => api("PUT", `/api/proyecto/actualizar/${proyecto[0]}`, { token: carpintero.token, form: formulario(cambios) })
+        assert.equal((await editar({ celularCliente: "12" })).status, 400)
+        assert.equal((await editar({ nombreCliente: "Ana <script>" })).status, 400)
+        assert.equal((await editar({ celularCliente: "0966666666" })).status, 200)
+    })
+})
+
+describe("Perfil del cliente", () => {
+    test("devuelve toda la data, con los campos que lee el frontend y su proyecto más reciente", async () => {
+        const carpintero = await crearCarpintero({ aprobar: true })
+        const cliente = await crearCliente()
+
+        const sinProyectos = await api("GET", "/api/cliente/perfil", { token: cliente.token })
+        assert.equal(sinProyectos.status, 200)
+        assert.equal(sinProyectos.datos.nombre, "Ana")
+        assert.equal(sinProyectos.datos.apellido, "Lopez")
+        assert.equal(sinProyectos.datos.nombreCliente, "Ana Lopez")
+        assert.equal(sinProyectos.datos.emailCliente, cliente.email)
+        assert.match(sinProyectos.datos.cedulaCliente, /^\d{10}$/)
+        assert.equal(sinProyectos.datos.celularCliente, "0988888888")
+        assert.equal(sinProyectos.datos.rol, "cliente")
+        assert.equal(sinProyectos.datos.nombreProyecto, null)
+        assert.equal(sinProyectos.datos.totalProyectos, 0)
+        for (const secreto of ["password", "token", "tokenExpira", "tokenVersion", "stripeCustomerId"]) {
+            assert.equal(sinProyectos.datos[secreto], undefined, secreto)
+        }
+
+        await api("POST", "/api/proyecto/solicitar", {
+            token: cliente.token,
+            form: formulario({ nombreProyecto: "Closet", descripcionProyecto: "Closet empotrado", fechaEntrega: futuro(), carpintero: carpintero.id }),
+        })
+        const conProyecto = await api("GET", "/api/cliente/perfil", { token: cliente.token })
+        assert.equal(conProyecto.datos.nombreProyecto, "Closet")
+        assert.equal(conProyecto.datos.totalProyectos, 1)
+
+        // La ruta antigua devuelve lo mismo
+        const antigua = await api("GET", "/api/proyecto/perfil", { token: cliente.token })
+        assert.equal(antigua.status, 200)
+        assert.deepEqual(antigua.datos, conProyecto.datos)
+    })
+
+    test("un cliente solo ve su propio proyecto", async () => {
+        const carpintero = await crearCarpintero({ aprobar: true })
+        const a = await crearCliente()
+        const b = await crearCliente()
+        await api("POST", "/api/proyecto/solicitar", {
+            token: a.token,
+            form: formulario({ nombreProyecto: "Solo de A", descripcionProyecto: "Mueble de A", fechaEntrega: futuro(), carpintero: carpintero.id }),
+        })
+        assert.equal((await api("GET", "/api/cliente/perfil", { token: b.token })).datos.nombreProyecto, null)
+    })
+})
+
+describe("Catálogo: fecha de entrega del mueble", () => {
+    test("el carpintero la fija al publicar, puede cambiarla o quitarla, y se ve en el catálogo", async () => {
+        const dueno = await crearCarpintero({ aprobar: true })
+        const cliente = await crearCliente()
+        const base = { nombre: "Comedor", descripcion: "Comedor de roble" }
+        const entrega = futuro()
+
+        const creado = await api("POST", "/api/mueble", { token: dueno.token, form: formulario({ ...base, fechaEntrega: entrega }) })
+        assert.equal(creado.status, 201)
+        assert.equal(new Date(creado.datos.mueble.fechaEntrega).toISOString().slice(0, 10), new Date(entrega).toISOString().slice(0, 10))
+
+        // Sin fecha el mueble se publica igual (queda en null)
+        const sinFecha = await api("POST", "/api/mueble", { token: dueno.token, form: formulario(base) })
+        assert.equal(sinFecha.status, 201)
+        assert.equal(sinFecha.datos.mueble.fechaEntrega, null)
+
+        // El cliente la ve en el catálogo y en el detalle
+        const catalogo = await api("GET", "/api/mueble", { token: cliente.token })
+        const publicado = catalogo.datos.find((m) => m._id === creado.datos.mueble._id)
+        assert.ok(publicado.fechaEntrega)
+        assert.ok((await api("GET", `/api/mueble/${creado.datos.mueble._id}`, { token: cliente.token })).datos.fechaEntrega)
+
+        // Cambiarla y quitarla
+        const id = creado.datos.mueble._id
+        const nueva = new Date(Date.now() + 40 * 86400000).toISOString().slice(0, 10)
+        const cambiada = await api("PUT", `/api/mueble/${id}`, { token: dueno.token, form: formulario({ fechaEntrega: nueva }) })
+        assert.equal(cambiada.status, 200)
+        assert.equal(new Date(cambiada.datos.mueble.fechaEntrega).toISOString().slice(0, 10), nueva)
+        const quitada = await api("PUT", `/api/mueble/${id}`, { token: dueno.token, form: formulario({ fechaEntrega: "" }) })
+        assert.equal(quitada.datos.mueble.fechaEntrega, null)
+    })
+
+    test("rechaza fechas inválidas o pasadas y solo el dueño puede cambiarla", async () => {
+        const dueno = await crearCarpintero({ aprobar: true })
+        const otro = await crearCarpintero({ aprobar: true })
+        const base = { nombre: "Estante", descripcion: "Estante de pino" }
+        for (const fechaEntrega of ["no-es-fecha", "2020-01-01", "31/02/2099x"]) {
+            const r = await api("POST", "/api/mueble", { token: dueno.token, form: formulario({ ...base, fechaEntrega }) })
+            assert.equal(r.status, 400, fechaEntrega)
+        }
+        const creado = await api("POST", "/api/mueble", { token: dueno.token, form: formulario({ ...base, fechaEntrega: futuro() }) })
+        const id = creado.datos.mueble._id
+        assert.equal((await api("PUT", `/api/mueble/${id}`, { token: otro.token, form: formulario({ fechaEntrega: futuro() }) })).status, 403)
+        assert.equal((await api("PUT", `/api/mueble/${id}`, { token: dueno.token, form: formulario({ fechaEntrega: "2020-01-01" }) })).status, 400)
     })
 })

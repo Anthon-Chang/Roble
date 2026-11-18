@@ -17,8 +17,17 @@ import {
 import { sinSecretos } from "../helpers/firestore.js"
 import { subirArchivo } from "../helpers/storage.js"
 import { limpiarTemporales, validarPdf } from "../helpers/archivos.js"
+import {
+    combinar,
+    validarAniosExperiencia,
+    validarApellido,
+    validarCelular,
+    validarDireccion,
+    validarLongitudEmail,
+    validarNombre,
+    validarPassword,
+} from "../helpers/validaciones.js"
 
-const PASSWORD_MINIMO = 8
 const HORA_MS = 60 * 60 * 1000
 
 // Campos visibles para cualquier usuario autenticado (nunca contraseña, token ni correo).
@@ -43,17 +52,19 @@ const registro = async (req, res) => {
             if (req.body[campo] !== undefined) datos[campo] = req.body[campo]
         }
 
-        for (const campo of ["nombre", "apellido", "email", "password"]) {
-            if (typeof datos[campo] !== "string" || datos[campo].trim() === "") {
-                return res.status(400).json({ msg: "Lo sentimos, debes llenar todos los campos" })
-            }
-        }
-        if (!emailValido(datos.email)) {
-            return res.status(400).json({ msg: "El formato del correo electrónico no es válido" })
-        }
-        if (datos.password.length < PASSWORD_MINIMO) {
-            return res.status(400).json({ msg: `El password debe tener al menos ${PASSWORD_MINIMO} caracteres` })
-        }
+        // Se valida todo el formulario (en el orden del formulario) antes de tocar la base de datos
+        const { valores, error } = combinar({
+            nombre: validarNombre(datos.nombre),
+            apellido: validarApellido(datos.apellido),
+            direccion: validarDireccion(datos.direccion),
+            celular: validarCelular(datos.celular),
+            anios_experiencia: validarAniosExperiencia(datos.anios_experiencia),
+            email: emailValido(datos.email)
+                ? validarLongitudEmail(datos.email)
+                : { error: "El formato del correo electrónico no es válido" },
+            password: validarPassword(datos.password),
+        })
+        if (error) return res.status(400).json({ msg: error })
 
         const email = normalizarEmail(datos.email)
         if (await Carpintero.porEmail(email)) {
@@ -62,11 +73,11 @@ const registro = async (req, res) => {
 
         const token = crearTokenAleatorio()
         await Carpintero.crear({
-            nombre: datos.nombre.trim(),
-            apellido: datos.apellido.trim(),
-            direccion: datos.direccion?.trim() || null,
-            celular: datos.celular?.trim() || null,
-            anios_experiencia: Number(datos.anios_experiencia) || 0,
+            nombre: valores.nombre,
+            apellido: valores.apellido,
+            direccion: valores.direccion,
+            celular: valores.celular,
+            anios_experiencia: valores.anios_experiencia,
             email,
             password: await encryptPassword(datos.password),
             token,
@@ -162,9 +173,8 @@ const crearNuevoPassword = async (req, res) => {
         if (password !== confirmpassword) {
             return res.status(400).json({ msg: "Los passwords no coinciden" })
         }
-        if (password.length < PASSWORD_MINIMO) {
-            return res.status(400).json({ msg: `El password debe tener al menos ${PASSWORD_MINIMO} caracteres` })
-        }
+        const errorPassword = validarPassword(password).error
+        if (errorPassword) return res.status(400).json({ msg: errorPassword })
 
         const carpinteroBDD = await Carpintero.porToken(req.params.token)
         if (!tokenRecuperacionVigente(carpinteroBDD)) {
@@ -250,21 +260,25 @@ const actualizarPerfil = async (req, res) => {
             return res.status(403).json({ msg: "Acción no permitida" })
         }
 
-        const editables = ["nombre", "apellido", "direccion", "celular", "email"]
-        const cambios = {}
-        for (const campo of editables) {
-            if (req.body[campo] === undefined) continue
-            if (typeof req.body[campo] !== "string" || req.body[campo].trim() === "") {
-                return res.status(400).json({ msg: "Debes llenar todos los campos" })
-            }
-            cambios[campo] = req.body[campo].trim()
+        // Los campos enviados se validan con las mismas reglas que el registro
+        const body = req.body || {}
+        const validadores = {
+            nombre: validarNombre,
+            apellido: validarApellido,
+            direccion: validarDireccion,
+            celular: validarCelular,
+            email: (valor) =>
+                emailValido(valor)
+                    ? { valor: normalizarEmail(valor), ...validarLongitudEmail(valor) }
+                    : { error: "El formato del correo electrónico no es válido" },
         }
+        const enviados = Object.fromEntries(
+            Object.entries(validadores).filter(([campo]) => body[campo] !== undefined).map(([campo, validar]) => [campo, validar(body[campo])])
+        )
+        const { valores: cambios, error: errorCampos } = combinar(enviados)
+        if (errorCampos) return res.status(400).json({ msg: errorCampos })
 
         if (cambios.email !== undefined) {
-            if (!emailValido(cambios.email)) {
-                return res.status(400).json({ msg: "El formato del correo electrónico no es válido" })
-            }
-            cambios.email = normalizarEmail(cambios.email)
             if (cambios.email !== req.user.email) {
                 const existente = await Carpintero.porEmail(cambios.email)
                 if (existente) return res.status(400).json({ msg: "El email ya se encuentra registrado" })
@@ -291,9 +305,8 @@ const actualizarPassword = async (req, res) => {
         if (!passwordactual || !passwordnuevo) {
             return res.status(400).json({ msg: "Debes llenar todos los campos" })
         }
-        if (passwordnuevo.length < PASSWORD_MINIMO) {
-            return res.status(400).json({ msg: `El password debe tener al menos ${PASSWORD_MINIMO} caracteres` })
-        }
+        const errorPassword = validarPassword(passwordnuevo).error
+        if (errorPassword) return res.status(400).json({ msg: errorPassword })
 
         const carpinteroBDD = await Carpintero.porId(req.user._id)
         if (!carpinteroBDD) {

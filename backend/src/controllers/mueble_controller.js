@@ -3,6 +3,7 @@ import Carpintero from "../models/carpintero.js"
 import { masRecientesPrimero } from "../helpers/firestore.js"
 import { subirArchivo, eliminarArchivo } from "../helpers/storage.js"
 import { comoLista, limpiarTemporales, validarImagen } from "../helpers/archivos.js"
+import { leerFechaEntrega } from "../helpers/validaciones.js"
 
 const MAX_IMAGENES = 5
 
@@ -26,6 +27,18 @@ const leerCampos = (body, { parcial = false } = {}) => {
     }
     if (body.tipoMadera !== undefined) datos.tipoMadera = texto(body.tipoMadera) || null
     if (body.categoria !== undefined) datos.categoria = texto(body.categoria) || null
+
+    // Fecha de entrega que fija el carpintero para este mueble. Opcional; vacía la quita del catálogo.
+    if (body.fechaEntrega !== undefined) {
+        if (typeof body.fechaEntrega !== "string") return { error: "La fecha de entrega no es válida" }
+        if (body.fechaEntrega.trim() === "") {
+            datos.fechaEntrega = null
+        } else {
+            const { fecha, error } = leerFechaEntrega(body.fechaEntrega.trim())
+            if (error) return { error }
+            datos.fechaEntrega = fecha
+        }
+    }
 
     for (const campo of ["precio", "alto", "ancho", "profundidad"]) {
         if (body[campo] === undefined) continue
@@ -62,7 +75,7 @@ const validarImagenes = async (archivos) => {
 
 // =============================
 // CREAR MUEBLE (HU-006) - solo carpinteros aprobados
-// Campos: nombre, descripcion, tipoMadera, categoria, precio, alto, ancho, profundidad + imagenes (archivos)
+// Campos: nombre, descripcion, tipoMadera, categoria, precio, alto, ancho, profundidad, fechaEntrega + imagenes (archivos)
 // =============================
 export const crearMueble = async (req, res) => {
     try {
