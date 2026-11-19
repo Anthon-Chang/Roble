@@ -1,9 +1,10 @@
 import { useForm } from "react-hook-form";
 import storeProfile from "../../context/storeProfile";
 import storeAuth from "../../context/storeAuth";
+import { reglaPasswordNueva, reglaPasswordLogin } from "../../helpers/validaciones"
 
 const CardPassword = () => {
-  const { register, handleSubmit, formState: { errors } } = useForm();
+  const { register, handleSubmit, watch, formState: { errors } } = useForm();
   const { user, updatePasswordProfile } = storeProfile();
   const { clearToken } = storeAuth();
 
@@ -30,7 +31,7 @@ const CardPassword = () => {
             type="password"
             placeholder="Ingresa tu contraseña actual"
             className="w-full rounded-md border border-gray-300 dark:border-gray-600 py-2 px-3 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
-            {...register("passwordactual", { required: "La contraseña actual es obligatoria" })}
+            {...register("passwordactual", reglaPasswordLogin)}
           />
           {errors.passwordactual && <p className="text-red-600 mt-1">{errors.passwordactual.message}</p>}
         </div>
@@ -44,7 +45,11 @@ const CardPassword = () => {
             type="password"
             placeholder="Ingresa la nueva contraseña"
             className="w-full rounded-md border border-gray-300 dark:border-gray-600 py-2 px-3 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
-            {...register("passwordnuevo", { required: "La nueva contraseña es obligatoria" })}
+            {...register("passwordnuevo", {...reglaPasswordNueva,
+            validate: {...reglaPasswordNueva.validate,
+            distinta: (v) => v !== watch("passwordactual") || "La nueva contraseña debe ser diferente a la actual",
+            },
+          })}
           />
           {errors.passwordnuevo && <p className="text-red-600 mt-1">{errors.passwordnuevo.message}</p>}
         </div>

@@ -5,6 +5,7 @@ import { ToastContainer, toast } from "react-toastify"
 import storeAuth from "../../context/storeAuth"
 import { listarCarpinteros, mensajeError, solicitarProyecto } from "../../services/clienteService"
 import ClienteNav from "../../components/cliente/ClienteNav"
+import { reglaTextoCorto } from "../../helpers/validaciones"
 
 const hoy = () => new Date().toISOString().slice(0, 10)
 const inputCls = "block w-full rounded-md border border-gray-300 py-1 px-2 text-gray-700 bg-white"
@@ -89,13 +90,13 @@ const SolicitarProyecto = () => {
 
         <div>
           <label className="mb-1 block text-sm font-semibold">Nombre del proyecto</label>
-          <input className={inputCls} placeholder="Ej: Closet de 2 puertas" {...register("nombreProyecto", { required: "El nombre es obligatorio" })} />
+          <input className={inputCls} placeholder="Ej: Closet de 2 puertas" {...register("nombreProyecto", reglaTextoCorto("El nombre del proyecto", 3, 80))} />
           {errors.nombreProyecto && <p className="text-red-800">{errors.nombreProyecto.message}</p>}
         </div>
 
         <div>
           <label className="mb-1 block text-sm font-semibold">Descripción</label>
-          <textarea rows={4} className={inputCls} placeholder="Describe medidas, estilo, uso..." {...register("descripcionProyecto", { required: "La descripción es obligatoria" })} />
+          <textarea rows={4} className={inputCls} placeholder="Describe medidas, estilo, uso..." {...register("descripcionProyecto", reglaTextoCorto("La descripción", 10, 500))} />
           {errors.descripcionProyecto && <p className="text-red-800">{errors.descripcionProyecto.message}</p>}
         </div>
 

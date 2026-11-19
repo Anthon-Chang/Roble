@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form"
 import { generateAvatar, convertBlobToBase64 } from "../../helpers/consultarIA"
 import { toast, ToastContainer } from "react-toastify"
 import ThreeViewer from "../model3D/model3DViewer.jsx";
+import {reglaEmail, reglaCelular, reglaCedulaRuc, reglaNombre,reglaTextoCorto, soloDigitos, hoyISO,} from "../../helpers/validaciones"
 
 export const Form = ({project}) => {
 
@@ -162,9 +163,9 @@ export const Form = ({project}) => {
                 <legend className="text-xl font-bold text-gray-700 bg-gray-200 px-4 py-1 rounded-md">Información del cliente</legend>
 
                 <div>
-                    <label className="mb-2 block text-sm font-semibold">Cédula</label>
+                    <label className="mb-2 block text-sm font-semibold">Cédula o Ruc</label>
                     <div className="flex items-center gap-10 mb-5">
-                        <input type="text" placeholder="Ingresa la cédula" className="block w-full rounded-md border border-gray-300 py-1 px-2 text-gray-500" {...register("cedulaCliente", { required: "La cédula es obligatoria" })} />
+                        <input type="text" inputMode="numeric" maxLength={13} onInput={soloDigitos(13)}placeholder="Cédula o RUC (10 a 13 dígitos)" className="..."{...register("cedulaCliente", reglaCedulaRuc())} />
                         <button type="button" className="py-1 px-8 bg-amber-700 text-white border rounded-xl duration-300 hover:bg-amber-800  hover:text-white sm:w-80" disabled={project}>Consultar</button>
                     </div>
                     {errors.cedulaCliente && <p className="text-red-800">{errors.cedulaCliente.message}</p>}
@@ -172,19 +173,19 @@ export const Form = ({project}) => {
 
                 <div>
                     <label className="mb-2 block text-sm font-semibold">Nombres completos</label>
-                    <input type="text" placeholder="Ingresa nombre y apellido" className="block w-full rounded-md border border-gray-300 py-1 px-2 text-gray-500 mb-5" {...register("nombreCliente", { required: "El nombre completo es obligatorio" })} />
+                    <input type="text" placeholder="Ingresa nombre y apellido" className="block w-full rounded-md border border-gray-300 py-1 px-2 text-gray-500 mb-5"{...register("nombreCliente", {...reglaTextoCorto("El nombre completo", 5, 80), validate: (v) => /^[A-Za-zÁÉÍÓÚáéíóúÑñÜü ]+$/.test(v.trim()) && v.trim().includes(" ") || "Ingresa nombre y apellido (solo letras)",})} />
                     {errors.nombreCliente && <p className="text-red-800">{errors.nombreCliente.message}</p>}
                 </div>
 
                 <div>
                     <label className="mb-2 block text-sm font-semibold">Correo electrónico</label>
-                    <input type="email" placeholder="Ingresa el correo electrónico" className="block w-full rounded-md border border-gray-300 py-1 px-2 text-gray-500 mb-5" {...register("emailCliente", { required: "El correo electrónico es obligatorio" })} />
+                    <input type="email" placeholder="Ingresa el correo electrónico" className="block w-full rounded-md border border-gray-300 py-1 px-2 text-gray-500 mb-5" {...register("emailCliente",reglaEmail)} />
                     {errors.emailCliente && <p className="text-red-800">{errors.emailCliente.message}</p>}
                 </div>
 
                 <div>
                     <label className="mb-2 block text-sm font-semibold">Celular</label>
-                    <input type="text" inputMode="tel" placeholder="Ingresa el celular" className="block w-full rounded-md border border-gray-300 py-1 px-2 text-gray-500 mb-5" {...register("celularCliente", { required: "El celular es obligatorio" })} />
+                    <input type="text" inputMode="tel" maxLength={10} onInput={soloDigitos(10)}placeholder="Ingresa el celular" className="..."{...register("celularCliente", reglaCelular())} />
                     {errors.celularCliente && <p className="text-red-800">{errors.celularCliente.message}</p>}
                 </div>
             </fieldset>
@@ -194,7 +195,7 @@ export const Form = ({project}) => {
 
                 <div>
                     <label className="mb-2 block text-sm font-semibold">Proyecto</label>
-                    <input type="text" placeholder="Ingresar nombre del proyecto" className="block w-full rounded-md border border-gray-300 py-1 px-2 text-gray-500 mb-5" {...register("nombreProyecto", { required: "El nombre del proyecto es obligatorio" })} disabled={project} />
+                    <input type="text" placeholder="Ingresar nombre del proyecto" className="block w-full rounded-md border border-gray-300 py-1 px-2 text-gray-500 mb-5" {...register("nombreProyecto", reglaTextoCorto("El nombre del proyecto", 3, 80))} />
                     {errors.nombreProyecto && <p className="text-red-800">{errors.nombreProyecto.message}</p>}
                 </div>
 
@@ -255,14 +256,14 @@ export const Form = ({project}) => {
 
                     <div>
                         <label htmlFor="fechaEntrega" className="mb-2 block text-sm font-semibold">Fecha de entrega</label>
-                        <input id="fechaEntrega" type="date" className="block w-full rounded-md border border-gray-300 py-2 px-3 text-gray-700" {...register("fechaEntrega", { required: "La fecha de entrega es obligatoria" })} />
+                        <input id="fechaEntrega" type="date" min={hoyISO()} className="..."{...register("fechaEntrega", {required: "La fecha de entrega es obligatoria",validate: (v) => v >= hoyISO() || "La fecha no puede estar en el pasado",})} />
                         {errors.fechaEntrega && <p className="text-red-800">{errors.fechaEntrega.message}</p>}
                     </div>
                 </div>
 
                 <div>
                     <label className="mb-2 block text-sm font-semibold">Descripción</label>
-                    <textarea placeholder="Ingresa una observación general" className="block w-full rounded-md border border-gray-300 py-1 px-2 text-gray-500 mb-5" {...register("descripcionProyecto", { required: "La observación del proyecto es obligatoria" })} />
+                    <textarea placeholder="Ingresa una observación general" className="block w-full rounded-md border border-gray-300 py-1 px-2 text-gray-500 mb-5" {...register("descripcionProyecto", reglaTextoCorto("La descripción", 10, 500))} />
                     {errors.descripcionProyecto && <p className="text-red-800">{errors.descripcionProyecto.message}</p>}
                 </div>
             </fieldset>

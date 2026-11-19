@@ -5,14 +5,16 @@ import {useFetch} from '../hooks/useFetch';
 import { ToastContainer } from 'react-toastify'
 import { useNavigate, useParams } from 'react-router'
 import { useForm } from 'react-hook-form'
+import { reglaPasswordNueva } from "../helpers/validaciones"
+
+
 
 const Reset = () => {
-
     const navigate = useNavigate()
     const { token } = useParams()
     const  fetchDataBackend  = useFetch()
     const [tokenback, setTokenBack] = useState(false)
-    const { register, handleSubmit, formState: { errors } } = useForm()
+    const { register, handleSubmit,watch, formState: { errors } } = useForm()
 
     const changePassword = async (dataForm) => {
         const url = `${import.meta.env.VITE_BACKEND_URL}/api/carpintero/nuevopassword/${token}`
@@ -61,7 +63,7 @@ const Reset = () => {
                         <label className="mb-2 block text-sm font-semibold">Nueva contraseña</label>
                         <input type="password" placeholder="Ingresa tu nueva contraseña"
                             className="block w-full rounded-md border border-gray-300 py-1 px-1.5 text-gray-500"
-                            {...register("password", { required: "La contraseña es obligatoria" })}
+                            {...register("password", reglaPasswordNueva)}
                         />
                         {errors.password && <p className="text-red-800">{errors.password.message}</p>}
                         
@@ -69,7 +71,10 @@ const Reset = () => {
                         <label className="mb-2 block text-sm font-semibold">Confirmar contraseña</label>
                         <input type="password" placeholder="Repite tu contraseña"
                             className="block w-full rounded-md border border-gray-300 py-1 px-1.5 text-gray-500"
-                            {...register("confirmpassword", { required: "La contraseña es obligatoria" })}
+                            {...register("confirmpassword", {
+                            required: "Debes confirmar la contraseña",
+                            validate: (v) => v === watch("password") || "Las contraseñas no coinciden",
+                            })}
                         />
                         {errors.confirmpassword && <p className="text-red-800">{errors.confirmpassword.message}</p>}
 

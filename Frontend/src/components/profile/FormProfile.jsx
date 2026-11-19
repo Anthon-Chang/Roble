@@ -2,6 +2,9 @@ import { useEffect } from "react";
 import storeProfile from "../../context/storeProfile";
 import { useForm } from "react-hook-form";
 import { ToastContainer } from "react-toastify";
+import {
+  reglaEmail, reglaNombre, reglaCelular, reglaTextoCorto, soloDigitos,
+} from "../../helpers/validaciones"
 
 const FormularioPerfil = () => {
   const { user, updateProfile } = storeProfile();
@@ -38,7 +41,7 @@ const FormularioPerfil = () => {
           type="text"
           placeholder="Ingresa tu nombre"
           className={inputClass}
-          {...register("nombre", { required: "El nombre es obligatorio" })}
+          {...register("nombre", reglaNombre("El nombre"))}
         />
         {errors.nombre && <p className="text-red-600 dark:text-red-400 text-sm">{errors.nombre.message}</p>}
       </div>
@@ -50,7 +53,7 @@ const FormularioPerfil = () => {
           type="text"
           placeholder="Ingresa tu apellido"
           className={inputClass}
-          {...register("apellido", { required: "El apellido es obligatorio" })}
+          {...register("apellido", reglaNombre("El apellido"))}
         />
         {errors.apellido && <p className="text-red-600 dark:text-red-400 text-sm">{errors.apellido.message}</p>}
       </div>
@@ -62,7 +65,7 @@ const FormularioPerfil = () => {
           type="text"
           placeholder="Ingresa tu dirección"
           className={inputClass}
-          {...register("direccion", { required: "La dirección es obligatoria" })}
+          {...register("direccion",reglaTextoCorto("La dirección", 5, 120))}
         />
         {errors.direccion && <p className="text-red-600 dark:text-red-400 text-sm">{errors.direccion.message}</p>}
       </div>
@@ -70,13 +73,9 @@ const FormularioPerfil = () => {
       {/* Celular */}
       <div>
         <label className="mb-2 block text-sm font-semibold">Celular</label>
-        <input
-          type="text"
-          inputMode="tel"
-          placeholder="Ingresa tu teléfono"
-          className={inputClass}
-          {...register("celular", { required: "El celular es obligatorio" })}
-        />
+        <input type="text" inputMode="tel" maxLength={10} onInput={soloDigitos(10)}
+          placeholder="Ingresa tu celular" className={inputClass}
+          {...register("celular", reglaCelular())} />
         {errors.celular && <p className="text-red-600 dark:text-red-400 text-sm">{errors.celular.message}</p>}
       </div>
 
@@ -87,7 +86,7 @@ const FormularioPerfil = () => {
           type="email"
           placeholder="Ingresa tu correo"
           className={inputClass}
-          {...register("email", { required: "El correo es obligatorio" })}
+          {...register("email",  reglaEmail)}
         />
         {errors.email && <p className="text-red-600 dark:text-red-400 text-sm">{errors.email.message}</p>}
       </div>

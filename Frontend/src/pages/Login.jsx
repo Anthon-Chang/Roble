@@ -10,6 +10,7 @@ import { GoogleLogin } from "@react-oauth/google";
 import axios from "axios";
 import { toast } from 'react-toastify'
 import { loginUnificado } from '../services/clienteService'
+import { reglaEmail, reglaPasswordLogin } from "../helpers/validaciones"
 
 const Login = () => {
     const [showPassword, setShowPassword] = useState(false);
@@ -99,7 +100,7 @@ const loginUser = async (dataForm) => {
                         type="email"
                         placeholder="Ingresa tu correo"
                         className="w-full rounded-md border border-gray-300 focus:ring-1 px-2 py-1"
-                        {...register("email", { required: "El correo es obligatorio" })}
+                        {...register("email", reglaEmail)}
                     />
                     {errors.email && <p className="text-red-800">{errors.email.message}</p>}
                 </div>
@@ -113,7 +114,7 @@ const loginUser = async (dataForm) => {
                             type={showPassword ? "text" : "password"}
                             placeholder="************"
                             className="w-full rounded-md border border-gray-300 px-3 py-2 pr-10 "
-                            {...register("password", { required: "La contraseña es obligatoria" })}
+                            {...register("password", reglaPasswordLogin)}
                         />
                         {errors.password && <p className="text-red-800">{errors.password.message}</p>}
 

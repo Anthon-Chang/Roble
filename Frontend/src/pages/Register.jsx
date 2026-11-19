@@ -5,6 +5,10 @@ import { useForm } from "react-hook-form"
 import { ToastContainer } from "react-toastify"
 import { useFetch } from "../hooks/useFetch"
 import logo_forget from "../../public/images/login.webp"
+import {
+  reglaEmail, reglaPasswordNueva, reglaNombre, reglaCelular,
+  reglaCedulaRuc, reglaTextoCorto, soloDigitos,
+} from "../helpers/validaciones"
 
 const inputCls =
     "block w-full rounded-md border border-gray-300 py-1 px-1.5 text-gray-500"
@@ -112,14 +116,14 @@ export const Register = () => {
                             <div className="mb-3">
                                 <label className="mb-2 block text-sm font-semibold">Nombre</label>
                                 <input type="text" placeholder="Ingresa tu nombre" className={inputCls}
-                                    {...register("nombre", { required: "El nombre es obligatorio" })} />
+                                    {...register("nombre", reglaNombre("El nombre"))} />
                                 {errors.nombre && <p className="text-red-800">{errors.nombre.message}</p>}
                             </div>
 
                             <div className="mb-3">
                                 <label className="mb-2 block text-sm font-semibold">Apellido</label>
                                 <input type="text" placeholder="Ingresa tu apellido" className={inputCls}
-                                    {...register("apellido", { required: "El apellido es obligatorio" })} />
+                                    {...register("apellido", reglaNombre("El apellido"))} />
                                 {errors.apellido && <p className="text-red-800">{errors.apellido.message}</p>}
                             </div>
 
@@ -128,7 +132,7 @@ export const Register = () => {
                                     <div className="mb-3">
                                         <label className="mb-2 block text-sm font-semibold">Dirección</label>
                                         <input type="text" placeholder="Ingresa tu dirección" className={inputCls}
-                                            {...register("direccion", { required: "La dirección es obligatoria" })} />
+                                            {...register("direccion", reglaTextoCorto("La dirección", 5, 120))} />
                                         {errors.direccion && <p className="text-red-800">{errors.direccion.message}</p>}
                                     </div>
 
@@ -138,34 +142,36 @@ export const Register = () => {
                                             {...register("anios_experiencia", {
                                                 required: "Los años de experiencia son obligatorios",
                                                 min: { value: 0, message: "No puede ser negativo" },
+                                                max: { value: 70, message: "Valor no realista (máx. 70)" },
+                                                validate: (v) => Number.isInteger(Number(v)) || "Debe ser un número entero",
                                             })} />
-                                        {errors.anios_experiencia && <p className="text-red-800">{errors.anios_experiencia.message}</p>}
+                                            {errors.anios_experiencia && <p className="text-red-800">{errors.anios_experiencia.message}</p>}
                                     </div>
                                 </>
                             )}
 
                             {tipo === "cliente" && (
                                 <div className="mb-3">
-                                    <label className="mb-2 block text-sm font-semibold">Cédula</label>
-                                    <input type="text" inputMode="numeric" placeholder="10 dígitos" className={inputCls}
-                                        {...register("cedula", {
-                                            pattern: { value: /^\d{10}$/, message: "La cédula debe tener 10 dígitos" },
-                                        })} />
+                                    <label className="mb-2 block text-sm font-semibold">Cédula o Ruc</label>
+                                    <input type="text" inputMode="numeric" maxLength={13} onInput={soloDigitos(13)}
+                                        placeholder="Cédula o RUC (10 a 13 dígitos)" className={inputCls}
+                                        {...register("cedula", reglaCedulaRuc(false))} />
                                     {errors.cedula && <p className="text-red-800">{errors.cedula.message}</p>}
                                 </div>
                             )}
 
                             <div className="mb-3">
                                 <label className="mb-2 block text-sm font-semibold">Celular</label>
-                                <input type="text" inputMode="tel" placeholder="Ingresa tu celular" className={inputCls}
-                                    {...register("celular", { required: "El celular es obligatorio" })} />
+                                <input type="text" inputMode="tel" maxLength={10} onInput={soloDigitos(10)}
+                                    placeholder="10 dígitos" className={inputCls}
+                                    {...register("celular", reglaCelular())} />
                                 {errors.celular && <p className="text-red-800">{errors.celular.message}</p>}
                             </div>
 
                             <div className="mb-3">
                                 <label className="mb-2 block text-sm font-semibold">Correo electrónico</label>
                                 <input type="email" placeholder="Ingresa tu correo electrónico" className={inputCls}
-                                    {...register("email", { required: "El correo electrónico es obligatorio" })} />
+                                    {...register("email",  reglaEmail)} />
                                 {errors.email && <p className="text-red-800">{errors.email.message}</p>}
                             </div>
 
@@ -176,10 +182,7 @@ export const Register = () => {
                                         type={showPassword ? "text" : "password"}
                                         placeholder="Mínimo 8 caracteres"
                                         className="w-full rounded-md border border-gray-300 px-3 py-2 pr-10"
-                                        {...register("password", {
-                                            required: "La contraseña es obligatoria",
-                                            minLength: { value: 8, message: "Mínimo 8 caracteres" },
-                                        })}
+                                        {...register("password", reglaPasswordNueva)}
                                     />
                                     <button
                                         type="button"

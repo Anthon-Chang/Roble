@@ -1,30 +1,21 @@
 import storeProfile from "../../context/storeProfile"
+
+const fila = (label, valor) => (
+  <div className="self-start w-full flex gap-2">
+    <b>{label}:</b><p>{valor || "--"}</p>
+  </div>
+)
+
 export const CardProfileOwner = () => {
-
-     const {user} = storeProfile()
-
-    return (
-        <div className="bg-white border border-slate-200 h-auto p-4 
-                        flex flex-col items-center justify-between shadow-xl rounded-lg">
-
-            <div>
-                <img src="https://cdn-icons-png.flaticon.com/512/4715/4715329.png" alt="img-client" className="m-auto " width={120} height={120} />
-            </div>
-            <div className="self-start">
-                <b>Nombre:</b><p className="inline-block ml-3">{user?.nombreCliente}</p>
-            </div >
-            <div className="self-start">
-                <b>Cédula:</b><p className="inline-block ml-3">{user?.cedulaCliente}</p>
-            </div >
-            <div className="self-start">
-                <b>Email:</b><p className="inline-block ml-3"> {user?.emailCliente}</p>
-            </div>
-            <div className="self-start">
-                <b>Celular:</b><p className="inline-block ml-3">{user?.celularCliente}</p>
-            </div>
-            <div className="self-start">
-                <b>Producto:</b><p className="inline-block ml-3">{user?.nombreProyecto}</p>
-            </div>
-        </div>
-    )
+  const { user } = storeProfile()
+  return (
+    <div className="bg-white border border-slate-200 p-6 flex flex-col items-center shadow-xl rounded-lg space-y-3 text-gray-800">
+      <img src="https://cdn-icons-png.flaticon.com/512/4715/4715329.png" alt="img-client" width={120} height={120} />
+      {fila("Nombre", user?.nombre)}
+      {fila("Apellido", user?.apellido)}
+      {fila("Cédula", user?.cedula)}
+      {fila("Email", user?.email)}
+      {fila("Celular", user?.celular)}
+    </div>
+  )
 }

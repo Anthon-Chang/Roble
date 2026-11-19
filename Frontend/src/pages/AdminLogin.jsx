@@ -5,6 +5,7 @@ import { ToastContainer, toast } from "react-toastify"
 import storeAuth from "../context/storeAuth"
 import storeProfile from "../context/storeProfile"
 import { loginAdmin } from "../services/adminService"
+import { reglaEmail, reglaPasswordLogin } from "../helpers/validaciones"
 
 const AdminLogin = () => {
   const navigate = useNavigate()
@@ -50,7 +51,7 @@ const AdminLogin = () => {
           <input
             type="email"
             className="w-full rounded-md border border-gray-300 px-2 py-1"
-            {...register("email", { required: "El correo es obligatorio" })}
+            {...register("email",reglaEmail)}
           />
           {errors.email && <p className="text-red-800">{errors.email.message}</p>}
         </div>
@@ -60,7 +61,7 @@ const AdminLogin = () => {
           <input
             type="password"
             className="w-full rounded-md border border-gray-300 px-2 py-1"
-            {...register("password", { required: "La contraseña es obligatoria" })}
+            {...register("password",reglaPasswordLogin)}
           />
           {errors.password && <p className="text-red-800">{errors.password.message}</p>}
         </div>

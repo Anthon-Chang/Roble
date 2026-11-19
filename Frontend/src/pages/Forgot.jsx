@@ -2,6 +2,7 @@ import {Link} from 'react-router'
 import { useForm } from 'react-hook-form';
 import { ToastContainer} from 'react-toastify'
 import { useFetch } from '../hooks/useFetch'
+import { reglaEmail } from "../helpers/validaciones"
 
 
 export const Forgot = () => {
@@ -36,7 +37,7 @@ export const Forgot = () => {
                         <div className="mb-1">
                             <label className="mb-2 block text-sm font-semibold">Correo electrónico</label>
                             <input type="email" placeholder="Ingresa un correo electrónico válido" className="block w-full rounded-md border border-gray-300 py-1 px-1.5 text-gray-500"
-                            {...register("email", { required: "El correo electrónico es obligatorio" })}
+                            {...register("email",  reglaEmail)}
                             />
                             {errors.email && <p className="text-red-800">{errors.email.message}</p>}
                         </div>
