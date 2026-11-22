@@ -29,6 +29,7 @@ const Dashboard = () => {
           { to: "/dashboard/estado-perfil", label: "Estado del perfil", icon: "◉" },
           { to: "/dashboard/cv", label: "Mi currículum (CV)", icon: "▤" },
           { to: "/dashboard/modelos3d", label: "Mis modelos 3D", icon: "◇" },
+          { to: "/dashboard/list", label: "Proyectos solicitados", icon: "▣" },
         ]
       : [
           { to: "/dashboard", label: "Resumen", icon: "▦" },

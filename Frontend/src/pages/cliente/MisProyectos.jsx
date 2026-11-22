@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react"
 import { Link } from "react-router"
 import { ToastContainer, toast } from "react-toastify"
@@ -51,13 +52,19 @@ const Proyecto = ({ p, onUnauthorized }) => {
           {cargando ? (
             <p className="text-sm text-gray-500">Cargando...</p>
           ) : estados.length === 0 ? (
-            <p className="text-sm text-gray-500">El carpintero aún no ha registrado avances ni cobros para este proyecto.</p>
+            <p className="text-sm text-gray-500">
+              El carpintero aún no ha registrado avances ni cobros para este proyecto.
+            </p>
           ) : (
             <>
               <div className="overflow-x-auto">
                 <table className="w-full table-auto text-sm">
                   <thead className="bg-gray-800 text-slate-400">
-                    <tr>{["Etapa", "Detalle", "Prioridad", "Precio", "Pago"].map((h) => <th key={h} className="p-2">{h}</th>)}</tr>
+                    <tr>
+                      {["Etapa", "Detalle", "Prioridad", "Precio", "Pago"].map((h) => (
+                        <th key={h} className="p-2">{h}</th>
+                      ))}
+                    </tr>
                   </thead>
                   <tbody>
                     {estados.map((e) => (
@@ -66,26 +73,43 @@ const Proyecto = ({ p, onUnauthorized }) => {
                         <td className="px-2 text-left">{e.detalle}</td>
                         <td>{e.prioridad}</td>
                         <td>$ {e.precio}</td>
-                        <td className={e.estadoPago === "Pagado" ? "text-green-600" : "text-red-600"}>{e.estadoPago}</td>
+                        <td className={e.estadoPago === "Pagado" ? "text-green-600" : "text-red-600"}>
+                          {e.estadoPago}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
+
               <p className="text-sm mt-3">
                 Total: <b>$ {total}</b> · Pagado: <b>$ {pagado}</b> · Pendiente: <b>$ {total - pagado}</b>
               </p>
-              <Link to={`/dashboard/details/${p._id}`} className="inline-block mt-3 text-sm underline text-amber-700">
+
+              <Link
+                to={`/dashboard/details/${p._id}`}
+                className="inline-block mt-3 text-sm underline text-amber-700"
+              >
                 Ir a pagar las etapas pendientes
-              </Link>
-              <Link to={`/dashboard/propuestas/${p._id}`} className="inline-block mt-3 text-sm underline text-amber-700">
-                Ver propuestas de diseño
-              </Link>
-              <Link to={`/dashboard/chat/${p._id}`} className="inline-block mt-3 text-sm underline text-amber-700">
-                Abrir chat
               </Link>
             </>
           )}
+
+          <div className="flex flex-wrap gap-4 mt-4 pt-3 border-t border-gray-100">
+            <Link
+              to={`/dashboard/propuestas/${p._id}`}
+              className="text-sm underline text-amber-700"
+            >
+              Ver propuestas de diseño
+            </Link>
+
+            <Link
+              to={`/dashboard/chat/${p._id}`}
+              className="text-sm underline text-amber-700"
+            >
+              Abrir chat
+            </Link>
+          </div>
         </div>
       )}
     </div>
@@ -122,11 +146,16 @@ const MisProyectos = () => {
         <p className="text-gray-500">Cargando...</p>
       ) : lista.length === 0 ? (
         <div className="p-4 text-sm text-red-800 rounded-lg bg-red-50">
-          Aún no tienes proyectos. <Link to="/dashboard/solicitar" className="underline font-semibold">Solicita el primero</Link>
+          Aún no tienes proyectos.{" "}
+          <Link to="/dashboard/solicitar" className="underline font-semibold">
+            Solicita el primero
+          </Link>
         </div>
       ) : (
         <div className="space-y-4 max-w-4xl">
-          {lista.map((p) => <Proyecto key={p._id} p={p} onUnauthorized={clearToken} />)}
+          {lista.map((p) => (
+            <Proyecto key={p._id} p={p} onUnauthorized={clearToken} />
+          ))}
         </div>
       )}
     </div>
