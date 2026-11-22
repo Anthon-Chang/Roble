@@ -22,6 +22,7 @@ export const Proyecto = {
             imagenProyectoIA: null,
             imagenProyectoIAPath: null,
             estadoProyecto: true,
+            aprobacionModelo: false,
             ...datos,
         }),
     porId: (id) => obtener(COLECCION, id),

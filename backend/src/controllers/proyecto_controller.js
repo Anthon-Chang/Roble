@@ -2,6 +2,7 @@ import Proyecto, { CAMPOS_EDITABLES } from "../models/Proyecto.js"
 import Cliente from "../models/Cliente.js"
 import Carpintero from "../models/carpintero.js"
 import Estado from "../models/Estado.js"
+import Propuesta from "../models/Propuesta.js"
 import { sendMailToOwner } from "../helpers/sendMail.js"
 import { subirArchivo, subirBase64, eliminarArchivo } from "../helpers/storage.js"
 import { limpiarTemporales, validarImagen } from "../helpers/archivos.js"
@@ -245,8 +246,11 @@ const detalleProyecto = async (req, res) => {
             .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
             .map(({ createdAt, updatedAt, pagoEnCurso, ...resto }) => resto)
 
+        // Propuestas de diseño 3D del proyecto (HU-011/HU-012), más recientes primero
+        const propuestas = masRecientesPrimero(await Propuesta.porProyecto(proyecto._id))
+
         const [presentado] = await presentarProyectos([proyecto])
-        res.status(200).json({ ...presentado, estados })
+        res.status(200).json({ ...presentado, estados, propuestas })
     } catch (error) {
         responderError(res, error)
     }

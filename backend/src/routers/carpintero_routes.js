@@ -10,6 +10,7 @@ import {
     actualizarPerfil,
     actualizarPassword,
     subirCV,
+    subirFoto,
     verMiCV,
     listarAprobados,
     detalleAprobado
@@ -45,6 +46,9 @@ router.post('/login', login)
 router.get('/perfil', verificarTokenJWT, permitirRoles('carpintero'), perfil)
 router.put('/actualizarperfil/:id', verificarTokenJWT, permitirRoles('carpintero'), actualizarPerfil)
 router.put('/actualizarpassword/:id', verificarTokenJWT, permitirRoles('carpintero'), actualizarPassword)
+
+// Foto de perfil (HU-020)
+router.put('/foto', verificarTokenJWT, permitirRoles('carpintero'), subidaArchivos, subirFoto)
 
 // CV en PDF (HU-004): solo carpinteros
 router.get('/cv', verificarTokenJWT, permitirRoles('carpintero'), verMiCV)

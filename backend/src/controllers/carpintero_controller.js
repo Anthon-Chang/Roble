@@ -16,7 +16,7 @@ import {
 } from "../helpers/password.js"
 import { sinSecretos } from "../helpers/firestore.js"
 import { subirArchivo } from "../helpers/storage.js"
-import { limpiarTemporales, validarPdf } from "../helpers/archivos.js"
+import { limpiarTemporales, validarImagen, validarPdf } from "../helpers/archivos.js"
 import {
     combinar,
     validarAniosExperiencia,
@@ -372,6 +372,31 @@ const subirCV = async (req, res) => {
     }
 }
 
+// =============================
+// CARGAR / ACTUALIZAR FOTO DE PERFIL (HU-020)
+// =============================
+const subirFoto = async (req, res) => {
+    try {
+        const archivo = req.files?.foto
+        if (!archivo || Array.isArray(archivo)) {
+            return res.status(400).json({ msg: "Debes enviar un único archivo de imagen en el campo 'foto'" })
+        }
+
+        const error = await validarImagen(archivo)
+        if (error) return res.status(400).json({ msg: error })
+
+        const { url, path } = await subirArchivo(archivo, "fotos", { rutaFija: `fotos/carpintero/${req.user._id}/foto` })
+        const actualizado = await Carpintero.actualizar(req.user._id, { fotoUrl: url, fotoPath: path })
+
+        res.status(200).json({ msg: "Foto de perfil actualizada correctamente", fotoUrl: actualizado.fotoUrl })
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({ msg: "❌ Error en el servidor" })
+    } finally {
+        await limpiarTemporales(req.files)
+    }
+}
+
 const verMiCV = (req, res) => {
     if (!req.user.cvUrl) return res.status(404).json({ msg: "Aún no has cargado tu CV" })
     res.status(200).json({ cvUrl: req.user.cvUrl, cvActualizado: req.user.cvActualizado, estadoAprobacion: req.user.estadoAprobacion })
@@ -418,6 +443,7 @@ export {
     actualizarPerfil,
     actualizarPassword,
     subirCV,
+    subirFoto,
     verMiCV,
     listarAprobados,
     detalleAprobado,

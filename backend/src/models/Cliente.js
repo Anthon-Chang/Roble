@@ -16,6 +16,8 @@ export const Cliente = {
             passwordTemporal: false,
             token: null,
             tokenExpira: null,
+            fotoUrl: null,
+            fotoPath: null,
             ...datos,
             email: normalizarEmail(datos.email),
         }),

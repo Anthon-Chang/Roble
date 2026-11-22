@@ -5,7 +5,16 @@ const COLECCION = "administradores"
 
 export const Administrador = {
     crear: (datos) =>
-        crear(COLECCION, { nombre: "Administrador", status: true, rol: "administrador", ...datos, email: normalizarEmail(datos.email) }),
+        crear(COLECCION, {
+            nombre: "Administrador",
+            celular: null,
+            fotoUrl: null,
+            fotoPath: null,
+            status: true,
+            rol: "administrador",
+            ...datos,
+            email: normalizarEmail(datos.email),
+        }),
     porId: (id) => obtener(COLECCION, id),
     porEmail: (email) => buscarUno(COLECCION, { email: normalizarEmail(email) }),
     actualizar: (id, cambios) => actualizar(COLECCION, id, cambios),

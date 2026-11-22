@@ -27,6 +27,8 @@ export const Carpintero = {
             cvUrl: null,
             cvPath: null,
             cvActualizado: null,
+            fotoUrl: null,
+            fotoPath: null,
             ...datos,
             email: normalizarEmail(datos.email),
         }),

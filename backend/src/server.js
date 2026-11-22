@@ -6,6 +6,9 @@ import helmet from 'helmet'
 import routerCarpinteros from './routers/carpintero_routes.js'
 import planRoutes from "./routers/planRoutes.js";
 import model3dRoutes from "./routers/model3d_routes.js";
+import propuestaRoutes from "./routers/propuesta_routes.js";
+import quejaRoutes from "./routers/queja_routes.js";
+import sancionRoutes from "./routers/sancion_routes.js";
 import routerProyectos from './routers/proyecto_routes.js';
 import routerEstado from './routers/estado_routes.js';
 import routerAdmin from './routers/admin_routes.js';
@@ -91,6 +94,15 @@ app.use("/api/plans", planRoutes)
 
 // Rutas de modelos 3D
 app.use("/api/models", model3dRoutes);
+
+// Rutas de propuestas de diseño 3D (Sprint 3 - HU-011/HU-012)
+app.use("/api/propuesta", propuestaRoutes)
+
+// Rutas de quejas y sugerencias (Sprint 4 - HU-016)
+app.use("/api/queja", quejaRoutes)
+
+// Rutas de sanciones a carpinteros (Sprint 4 - HU-017)
+app.use("/api/sancion", sancionRoutes)
 
 // Ruta no encontrada
 app.use((req, res) => res.status(404).send("Endpoint no encontrado - 404"))

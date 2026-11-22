@@ -2,9 +2,12 @@ import Administrador from "../models/Administrador.js"
 import Carpintero from "../models/carpintero.js"
 import Cliente from "../models/Cliente.js"
 import { crearTokenJWT } from "../middlewares/JWT.js"
-import { matchPassword } from "../helpers/password.js"
+import { matchPassword, emailValido, normalizarEmail } from "../helpers/password.js"
 import { masRecientesPrimero, sinSecretos } from "../helpers/firestore.js"
 import { sendMailEstadoPerfil } from "../helpers/sendMail.js"
+import { subirArchivo } from "../helpers/storage.js"
+import { limpiarTemporales, validarImagen } from "../helpers/archivos.js"
+import { combinar, validarCelular, validarLongitudEmail, validarNombre } from "../helpers/validaciones.js"
 
 const OCULTOS_ADMIN = ["cvPath"]
 const ROLES_GESTIONABLES = { carpintero: Carpintero, cliente: Cliente }
@@ -34,6 +37,73 @@ export const loginAdmin = async (req, res) => {
     } catch (error) {
         console.error(error)
         res.status(500).json({ msg: "❌ Error en el servidor" })
+    }
+}
+
+// =============================
+// PERFIL DEL ADMINISTRADOR (HU-020)
+// =============================
+export const perfilAdmin = (req, res) => {
+    res.status(200).json(sinSecretos(req.user))
+}
+
+// =============================
+// ACTUALIZAR PERFIL DEL ADMINISTRADOR (HU-020)
+// Campos editables: nombre, celular y correo.
+// =============================
+export const actualizarPerfilAdmin = async (req, res) => {
+    try {
+        const body = req.body || {}
+        const validadores = {
+            nombre: validarNombre,
+            celular: validarCelular,
+            email: (valor) =>
+                emailValido(valor)
+                    ? { valor: normalizarEmail(valor), ...validarLongitudEmail(valor) }
+                    : { error: "El formato del correo electrónico no es válido" },
+        }
+        const enviados = Object.fromEntries(
+            Object.entries(validadores).filter(([campo]) => body[campo] !== undefined).map(([campo, validar]) => [campo, validar(body[campo])])
+        )
+        const { valores: cambios, error: errorCampos } = combinar(enviados)
+        if (errorCampos) return res.status(400).json({ msg: errorCampos })
+
+        if (cambios.email !== undefined && cambios.email !== req.user.email) {
+            const existente = await Administrador.porEmail(cambios.email)
+            if (existente) return res.status(400).json({ msg: "El email ya se encuentra registrado" })
+        }
+        if (Object.keys(cambios).length === 0) return res.status(400).json({ msg: "No se enviaron cambios" })
+
+        const actualizado = await Administrador.actualizar(req.user._id, cambios)
+        res.status(200).json(sinSecretos(actualizado))
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({ msg: "❌ Error en el servidor" })
+    }
+}
+
+// =============================
+// CARGAR / ACTUALIZAR FOTO DE PERFIL DEL ADMINISTRADOR (HU-020)
+// =============================
+export const subirFotoAdmin = async (req, res) => {
+    try {
+        const archivo = req.files?.foto
+        if (!archivo || Array.isArray(archivo)) {
+            return res.status(400).json({ msg: "Debes enviar un único archivo de imagen en el campo 'foto'" })
+        }
+
+        const error = await validarImagen(archivo)
+        if (error) return res.status(400).json({ msg: error })
+
+        const { url, path } = await subirArchivo(archivo, "fotos", { rutaFija: `fotos/administrador/${req.user._id}/foto` })
+        const actualizado = await Administrador.actualizar(req.user._id, { fotoUrl: url, fotoPath: path })
+
+        res.status(200).json({ msg: "Foto de perfil actualizada correctamente", fotoUrl: actualizado.fotoUrl })
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({ msg: "❌ Error en el servidor" })
+    } finally {
+        await limpiarTemporales(req.files)
     }
 }
 
