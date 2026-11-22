@@ -43,6 +43,8 @@ import Catalogo from './pages/cliente/Catalogo'
 import ModeloDetalle from './pages/cliente/ModeloDetalle'
 import SolicitarProyecto from './pages/cliente/SolicitarProyecto'
 import MisProyectos from './pages/cliente/MisProyectos'
+import Propuestas from './pages/Propuestas'
+import ChatProyecto from './pages/ChatProyecto'
 
 const DashboardInicio = () => {
   const rol = storeAuth((state) => state.rol)
@@ -128,6 +130,8 @@ function App() {
                   <Route path='catalogo/modelo/:id' element={<ClienteRoute><ModeloDetalle /></ClienteRoute>} />
                   <Route path='solicitar' element={<ClienteRoute><SolicitarProyecto /></ClienteRoute>} />
                   <Route path='mis-proyectos' element={<ClienteRoute><MisProyectos /></ClienteRoute>} />
+                  <Route path='propuestas/:id' element={<Propuestas />} />
+                  <Route path='chat/:id' element={<ChatProyecto />} />
                 </Route>
               </Routes>
             </ProtectedRoute>

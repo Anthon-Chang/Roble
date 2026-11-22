@@ -78,6 +78,12 @@ const Proyecto = ({ p, onUnauthorized }) => {
               <Link to={`/dashboard/details/${p._id}`} className="inline-block mt-3 text-sm underline text-amber-700">
                 Ir a pagar las etapas pendientes
               </Link>
+              <Link to={`/dashboard/propuestas/${p._id}`} className="inline-block mt-3 text-sm underline text-amber-700">
+                Ver propuestas de diseño
+              </Link>
+              <Link to={`/dashboard/chat/${p._id}`} className="inline-block mt-3 text-sm underline text-amber-700">
+                Abrir chat
+              </Link>
             </>
           )}
         </div>

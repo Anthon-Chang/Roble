@@ -1,4 +1,4 @@
-import { MdDeleteForever, MdInfo, MdPublishedWithChanges } from "react-icons/md";
+import { MdDeleteForever, MdInfo, MdPublishedWithChanges, MdChatBubble } from "react-icons/md";
 import { useFetch } from "../../hooks/useFetch";
 import { useEffect, useState } from "react";
 import { useNavigate } from 'react-router';
@@ -134,6 +134,11 @@ const Table = () => {
                 title="Más información"
                 className="h-7 w-7 text-slate-800 cursor-pointer inline-block mr-2 hover:text-green-600"
                 onClick={() => navigate(`/dashboard/details/${proyecto._id}`)}
+              />
+              <MdChatBubble
+                title="Propuestas de diseño"
+                className="h-7 w-7 text-slate-800 cursor-pointer inline-block mr-2 hover:text-amber-600"
+                onClick={() => navigate(`/dashboard/propuestas/${proyecto._id}`)}
               />
 
               {rol !== "cliente" && (

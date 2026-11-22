@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import TableTreatments from "../components/treatments/Table"
 import ModalTreatments from "../components/treatments/Modal"
-import { useParams } from "react-router"
+import { useParams, Link } from "react-router"
 import {useFetch} from "../hooks/useFetch"
 import storeAuth from "../context/storeAuth"
 import storEstado from "../context/storEstado"
@@ -130,6 +130,14 @@ const Details = () => {
                                 <li className="text-md text-gray-00 mt-4">
                                     <span className="text-gray-600 font-bold">Precio: {proyecto?.precioProyecto ?? 0}</span>
                                 </li>
+                                <li className="mt-4">
+                                    <Link to={`/dashboard/propuestas/${id}`} className="text-amber-700 underline font-semibold mr-4">
+                                        Ver propuestas de diseño
+                                    </Link>
+                                    <Link to={`/dashboard/chat/${id}`} className="text-amber-700 underline font-semibold">
+                                        Abrir chat
+                                    </Link>
+                                    </li>
                             </ul>
 
                         </ul>
