@@ -3,9 +3,12 @@ import { useNavigate, useParams } from "react-router"
 import { ToastContainer, toast } from "react-toastify"
 import storeAuth from "../context/storeAuth"
 import { aprobarCarpintero, detalleCarpintero, rechazarCarpintero } from "../services/adminService"
+import { contarPalabras } from "../helpers/validaciones"
 import { BADGE } from "./AdminPanel"
 
 const fecha = (f) => (f ? new Date(f).toLocaleString("es-EC") : "-")
+const MAX_PALABRAS_MOTIVO = 50
+const CONTENIDO_VALIDO = /[A-Za-zÁÉÍÓÚáéíóúÑñÜü0-9]{2,}/
 
 const AdminCarpinteroDetail = () => {
   const { id } = useParams()
@@ -51,7 +54,10 @@ const AdminCarpinteroDetail = () => {
 
   const rechazar = async (e) => {
     e.preventDefault()
-    if (!motivo.trim()) return toast.error("Debes indicar el motivo del rechazo")
+    const m = motivo.trim()
+    if (!m) return toast.error("Debes indicar el motivo del rechazo")
+    if (!CONTENIDO_VALIDO.test(m)) return toast.error("Debes poner el motivo correcto, no solo un símbolo o carácter suelto")
+    if (contarPalabras(m) > MAX_PALABRAS_MOTIVO) return toast.error(`El motivo no puede tener más de ${MAX_PALABRAS_MOTIVO} palabras`)
     setSaving(true)
     try {
       const data = await rechazarCarpintero(id, motivo.trim())
@@ -188,6 +194,9 @@ const AdminCarpinteroDetail = () => {
               placeholder="Ej: El CV está incompleto"
               className="w-full rounded-md border border-gray-300 p-2"
             />
+            <p className={`text-xs text-right -mt-2 ${contarPalabras(motivo) > MAX_PALABRAS_MOTIVO ? "text-red-600" : "text-gray-400"}`}>
+              {contarPalabras(motivo)}/{MAX_PALABRAS_MOTIVO} palabras
+            </p>
             <div className="flex justify-end gap-3">
               <button type="button" onClick={() => { setModal(false); setMotivo("") }} className="px-4 py-2 border border-gray-300 rounded-lg">
                 Cancelar

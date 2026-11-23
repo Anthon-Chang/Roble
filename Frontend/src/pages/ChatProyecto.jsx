@@ -1,73 +1,80 @@
 import { useEffect, useRef, useState } from "react"
 import { useParams } from "react-router"
 import { useForm } from "react-hook-form"
-import { io } from "socket.io-client"
 import { ToastContainer, toast } from "react-toastify"
 import storeAuth from "../context/storeAuth"
+import storeChat from "../context/storeChat"
+import { getSocket } from "../services/socket"
 
 const emojis = ["😀", "😂", "😍", "😎", "😭", "🔥", "👍", "❤️"]
 
-// Chat en tiempo real de un proyecto (Sprint 3 · HU-014), vía Socket.IO.
-// A diferencia de src/pages/Chat.jsx (chat genérico sin sala ni autenticación),
-// este componente:
-//   1) envía el JWT en el handshake (socket.handshake.auth.token), como exige
-//      chatSocket en el backend.
-//   2) se une a la sala del proyecto con "unirse-proyecto" antes de enviar nada.
+// Chat en tiempo real de un proyecto (Sprint 3 · HU-014), 100% frontend: usa el socket
+// único que abre Dashboard.jsx (src/services/socket.js) y el historial guardado en
+// localStorage (src/context/storeChat.jsx). No hay ninguna llamada REST nueva aquí.
+// A diferencia de src/pages/Chat.jsx (chat genérico sin sala ni autenticación), este:
+//   1) usa el JWT ya puesto en el handshake del socket.
+//   2) se une a la sala del proyecto con "unirse-proyecto" (idempotente si Dashboard
+//      ya lo había unido antes).
 // Ruta sugerida: dashboard/chat/:id  (id = _id del proyecto)
 const ChatProyecto = () => {
   const { id: proyectoId } = useParams()
   const { token, rol } = storeAuth()
-  const [socket, setSocket] = useState(null)
+  const historial = storeChat((s) => s.mensajes[proyectoId] || [])
+  const agregarMensaje = storeChat((s) => s.agregarMensaje)
+  const marcarLeido = storeChat((s) => s.marcarLeido)
   const [isConnected, setIsConnected] = useState(false)
   const [enSala, setEnSala] = useState(false)
-  const [responses, setResponses] = useState([])
   const [showEmojis, setShowEmojis] = useState(false)
   const bottomRef = useRef(null)
 
   const { register, handleSubmit, reset, setValue, watch } = useForm({ defaultValues: { message: "" } })
 
+  // Al abrir este chat, se marca como leído (limpia el badge de "Mensajes" para este proyecto)
+  useEffect(() => {
+    if (proyectoId) marcarLeido(proyectoId)
+  }, [proyectoId, marcarLeido])
+
   useEffect(() => {
     if (!token || !proyectoId) return
+    const socket = getSocket(token)
 
-    const newSocket = io(import.meta.env.VITE_BACKEND_URL, {
-      transports: ["websocket"],
-      auth: { token },
-    })
-
-    newSocket.on("connect", () => {
-      setIsConnected(true)
-      newSocket.emit("unirse-proyecto", proyectoId, (ack) => {
+    const unirse = () => {
+      socket.emit("unirse-proyecto", proyectoId, (ack) => {
         if (ack?.ok) setEnSala(true)
         else toast.error(ack?.msg || "No se pudo unir a la sala del proyecto")
       })
-    })
+    }
 
-    newSocket.on("disconnect", () => {
+    setIsConnected(socket.connected)
+    if (socket.connected) unirse()
+
+    socket.on("connect", () => {
+      setIsConnected(true)
+      unirse()
+    })
+    socket.on("disconnect", () => {
       setIsConnected(false)
       setEnSala(false)
     })
 
-    newSocket.on("connect_error", (err) => toast.error(err.message || "Error de conexión al chat"))
-
-    newSocket.on("enviar-mensaje-front-back", (payload) => {
-      setResponses((prev) => [...prev, payload])
-    })
-
-    setSocket(newSocket)
-    return () => newSocket.disconnect()
+    return () => {
+      socket.off("connect", unirse)
+    }
   }, [token, proyectoId])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [responses])
+  }, [historial])
 
   const handleMessageChat = (data) => {
-    if (!socket || !enSala) return toast.error("Todavía no estás conectado a la sala del proyecto")
+    if (!token) return
+    const socket = getSocket(token)
+    if (!socket.connected || !enSala) return toast.error("Todavía no estás conectado a la sala del proyecto")
     if (!data.message?.trim()) return
 
     socket.emit("enviar-mensaje-front-back", { proyecto: proyectoId, body: data.message }, (ack) => {
       if (!ack?.ok) return toast.error(ack?.msg || "No se pudo enviar el mensaje")
-      setResponses((prev) => [...prev, { body: data.message, rol, from: "Yo" }])
+      agregarMensaje(proyectoId, { body: data.message, rol, from: "Yo", fecha: new Date().toISOString() })
       reset({ message: "" })
     })
   }
@@ -85,7 +92,12 @@ const ChatProyecto = () => {
         </div>
 
         <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-gray-100">
-          {responses.map((r, i) => (
+          {historial.length === 0 && (
+            <p className="text-sm text-gray-500 text-center mt-4">
+              Sin mensajes todavía en este navegador.
+            </p>
+          )}
+          {historial.map((r, i) => (
             <div
               key={i}
               className={`max-w-[75%] px-4 py-2 rounded-xl text-sm break-words ${

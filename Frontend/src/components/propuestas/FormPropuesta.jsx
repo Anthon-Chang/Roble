@@ -2,15 +2,18 @@ import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { toast } from "react-toastify"
 import { enviarPropuesta, mensajeError } from "../../services/propuestaService"
+import { reglaMaxPalabras, contarPalabras } from "../../helpers/validaciones"
 
 const FORMATOS_VALIDOS = [".obj", ".glb", ".gltf"]
+const MAX_PALABRAS_DESC = 50
 
 // Formulario del carpintero aprobado para enviar una propuesta de diseño 3D (HU-011)
 // sobre un proyecto del que es dueño.
 const FormPropuesta = ({ proyectoId, onEnviada }) => {
-  const { register, handleSubmit, reset, formState: { errors } } = useForm()
+  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm()
   const [progreso, setProgreso] = useState(0)
   const [enviando, setEnviando] = useState(false)
+  const descripcionValor = watch("description", "")
 
   const onSubmit = async (dataForm) => {
     const archivo = dataForm.modelo?.[0]
@@ -49,8 +52,14 @@ const FormPropuesta = ({ proyectoId, onEnviada }) => {
         <textarea
           placeholder="Notas sobre la propuesta"
           className="block w-full rounded-md border border-gray-300 py-1 px-2 text-gray-700"
-          {...register("description")}
+          {...register("description", reglaMaxPalabras("La descripción", MAX_PALABRAS_DESC, false))}
         />
+        <div className="flex justify-between items-start mt-1">
+          {errors.description ? <p className="text-red-600 text-sm">{errors.description.message}</p> : <span />}
+          <p className={`text-xs ml-2 whitespace-nowrap ${contarPalabras(descripcionValor) > MAX_PALABRAS_DESC ? "text-red-600" : "text-gray-400"}`}>
+            {contarPalabras(descripcionValor)}/{MAX_PALABRAS_DESC} palabras
+          </p>
+        </div>
       </div>
 
       <div>

@@ -3,12 +3,15 @@ import storeProfile from "../../context/storeProfile";
 import { useForm } from "react-hook-form";
 import { ToastContainer } from "react-toastify";
 import {
-  reglaEmail, reglaNombre, reglaCelular, reglaTextoCorto, soloDigitos,
+  reglaEmail, reglaNombre, reglaCelular, reglaMaxPalabras, soloDigitos, contarPalabras,
 } from "../../helpers/validaciones"
+
+const MAX_PALABRAS_DIRECCION = 50
 
 const FormularioPerfil = () => {
   const { user, updateProfile } = storeProfile();
-  const { register, handleSubmit, reset, formState: { errors } } = useForm();
+  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm();
+  const direccionValor = watch("direccion", "");
 
   const updateUser = (dataForm) => {
     const url = `${import.meta.env.VITE_BACKEND_URL}/api/carpintero/actualizarperfil/${user._id}`;
@@ -65,9 +68,14 @@ const FormularioPerfil = () => {
           type="text"
           placeholder="Ingresa tu dirección"
           className={inputClass}
-          {...register("direccion",reglaTextoCorto("La dirección", 5, 120))}
+          {...register("direccion", reglaMaxPalabras("La dirección", MAX_PALABRAS_DIRECCION))}
         />
-        {errors.direccion && <p className="text-red-600 dark:text-red-400 text-sm">{errors.direccion.message}</p>}
+        <div className="flex justify-between items-start mt-1">
+          {errors.direccion ? <p className="text-red-600 dark:text-red-400 text-sm">{errors.direccion.message}</p> : <span />}
+          <p className={`text-xs ml-2 whitespace-nowrap ${contarPalabras(direccionValor) > MAX_PALABRAS_DIRECCION ? "text-red-600" : "text-gray-400"}`}>
+            {contarPalabras(direccionValor)}/{MAX_PALABRAS_DIRECCION} palabras
+          </p>
+        </div>
       </div>
 
       {/* Celular */}

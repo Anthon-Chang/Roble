@@ -6,7 +6,9 @@ import { useForm } from "react-hook-form"
 import { generateAvatar, convertBlobToBase64 } from "../../helpers/consultarIA"
 import { toast, ToastContainer } from "react-toastify"
 import ThreeViewer from "../model3D/model3DViewer.jsx";
-import {reglaEmail, reglaCelular, reglaCedulaRuc, reglaNombre,reglaTextoCorto, soloDigitos, hoyISO,} from "../../helpers/validaciones"
+import {reglaEmail, reglaCelular, reglaCedulaRuc, reglaNombre,reglaTextoCorto, reglaMaxPalabras, soloDigitos, hoyISO, contarPalabras,} from "../../helpers/validaciones"
+
+const MAX_PALABRAS_DESC = 50
 
 export const Form = ({project}) => {
 
@@ -25,6 +27,7 @@ export const Form = ({project}) => {
     const navigate = useNavigate()
     const { register, handleSubmit, formState: { errors }, setValue, watch , reset } = useForm()
     const fetchDataBackend = useFetch()
+    const descripcionValor = watch("descripcionProyecto", "")
 
     const selectedOption = watch("imageOption")
 
@@ -263,8 +266,13 @@ export const Form = ({project}) => {
 
                 <div>
                     <label className="mb-2 block text-sm font-semibold">Descripción</label>
-                    <textarea placeholder="Ingresa una observación general" className="block w-full rounded-md border border-gray-300 py-1 px-2 text-gray-500 mb-5" {...register("descripcionProyecto", reglaTextoCorto("La descripción", 10, 500))} />
-                    {errors.descripcionProyecto && <p className="text-red-800">{errors.descripcionProyecto.message}</p>}
+                    <textarea placeholder="Ingresa una observación general" className="block w-full rounded-md border border-gray-300 py-1 px-2 text-gray-500 mb-5" {...register("descripcionProyecto", reglaMaxPalabras("La descripción", MAX_PALABRAS_DESC))} />
+                    <div className="flex justify-between items-start mb-3">
+                      {errors.descripcionProyecto ? <p className="text-red-800 text-sm">{errors.descripcionProyecto.message}</p> : <span />}
+                      <p className={`text-xs ml-2 whitespace-nowrap ${contarPalabras(descripcionValor) > MAX_PALABRAS_DESC ? "text-red-600" : "text-gray-400"}`}>
+                        {contarPalabras(descripcionValor)}/{MAX_PALABRAS_DESC} palabras
+                      </p>
+                    </div>
                 </div>
             </fieldset>
 

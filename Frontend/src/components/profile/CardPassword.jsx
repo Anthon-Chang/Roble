@@ -10,7 +10,9 @@ const CardPassword = () => {
 
   const updatePassword = async (dataForm) => {
     const url = `${import.meta.env.VITE_BACKEND_URL}/api/carpintero/actualizarpassword/${user._id}`;
-    const response = await updatePasswordProfile(url, dataForm);
+    const datosAEnviar = { ...dataForm };
+    delete datosAEnviar.confirmpasswordnuevo;
+    const response = await updatePasswordProfile(url, datosAEnviar);
     if (response) clearToken();
   };
 
@@ -52,6 +54,23 @@ const CardPassword = () => {
           })}
           />
           {errors.passwordnuevo && <p className="text-red-600 mt-1">{errors.passwordnuevo.message}</p>}
+        </div>
+
+        {/* Confirmar nueva contraseña */}
+        <div>
+          <label className="block mb-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
+            Confirmar nueva contraseña
+          </label>
+          <input
+            type="password"
+            placeholder="Repite la nueva contraseña"
+            className="w-full rounded-md border border-gray-300 dark:border-gray-600 py-2 px-3 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
+            {...register("confirmpasswordnuevo", {
+              required: "Debes confirmar la nueva contraseña",
+              validate: (v) => v === watch("passwordnuevo") || "Las contraseñas no coinciden",
+            })}
+          />
+          {errors.confirmpasswordnuevo && <p className="text-red-600 mt-1">{errors.confirmpasswordnuevo.message}</p>}
         </div>
 
         {/* Botón */}

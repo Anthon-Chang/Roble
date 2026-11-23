@@ -19,7 +19,7 @@ export const reglaEmail = {
 
 export const reglaPasswordNueva = {
   required: "La contraseña es obligatoria",
-  minLength: { value: 8, message: "Mínimo 8 caracteres" },
+  minLength: { value: 11, message: "Debe tener más de 10 caracteres" },
   maxLength: { value: 64, message: "Máximo 64 caracteres" },
   validate: {
     sinEspacios: (v) => !/\s/.test(v) || "No puede contener espacios",
@@ -72,7 +72,27 @@ export const reglaTextoCorto = (etiqueta, min = 3, max = 100) => ({
     const t = (v || "").trim()
     if (t.length < min) return `Mínimo ${min} caracteres`
     if (t.length > max) return `Máximo ${max} caracteres`
+    if (!CONTENIDO_VALIDO.test(t)) return `${etiqueta}: escribe contenido real, no solo puntos o símbolos`
     return true
+  },
+})
+
+// Cuenta palabras reales (ignora espacios/saltos de línea duplicados)
+export const contarPalabras = (texto) =>
+  (texto || "").trim().split(/\s+/).filter(Boolean).length
+
+// Exige al menos una palabra real (letras/números), no solo puntos, guiones o símbolos
+export const CONTENIDO_VALIDO = /[A-Za-zÁÉÍÓÚáéíóúÑñÜü0-9]{2,}/
+
+// Texto con tope de palabras (para dirección, descripción, detalle, etc.)
+export const reglaMaxPalabras = (etiqueta, max = 50, obligatorio = true) => ({
+  required: obligatorio ? `${etiqueta} es obligatoria` : false,
+  validate: (v) => {
+    const t = (v || "").trim()
+    if (!t) return obligatorio ? `${etiqueta} es obligatoria` : true
+    if (!CONTENIDO_VALIDO.test(t)) return `${etiqueta}: escribe contenido real, no solo un símbolo o carácter suelto`
+    const palabras = contarPalabras(t)
+    return palabras <= max || `${etiqueta} no puede tener más de ${max} palabras (tiene ${palabras})`
   },
 })
 

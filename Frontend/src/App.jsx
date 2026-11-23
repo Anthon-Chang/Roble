@@ -45,6 +45,7 @@ import SolicitarProyecto from './pages/cliente/SolicitarProyecto'
 import MisProyectos from './pages/cliente/MisProyectos'
 import Propuestas from './pages/Propuestas'
 import ChatProyecto from './pages/ChatProyecto'
+import Mensajes from './pages/Mensajes'
 
 const DashboardInicio = () => {
   const rol = storeAuth((state) => state.rol)
@@ -57,7 +58,7 @@ const DashboardInicio = () => {
 function App() {
 
   const [darkMode, setDarkMode] = useState(false);
-  
+
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add("dark");
@@ -81,7 +82,7 @@ function App() {
     {!token && <Navbar darkMode={darkMode} setDarkMode={setDarkMode} />}
       <main className={`${!token ? "pt-20" : "pt-0"} min-h-screen bg-white dark:bg-gray-900 text-black dark:text-white transition-colors`}>
       <Routes>
-        
+
         <Route element={<PublicRoute />}>
           <Route path="forbidden" element={<Forbidden />} />
           <Route index element={<Home/>}/>
@@ -117,7 +118,7 @@ function App() {
                     <PrivateRouteWithRole>
                       <Update />
                     </PrivateRouteWithRole>
-                  } /> 
+                  } />
                   <Route path='chat' element={<Chat/>}/>
                   <Route path='admin' element={<AdminRoute><AdminPanel /></AdminRoute>} />
                   <Route path='admin/carpintero/:id' element={<AdminRoute><AdminCarpinteroDetail /></AdminRoute>} />
@@ -132,6 +133,7 @@ function App() {
                   <Route path='mis-proyectos' element={<ClienteRoute><MisProyectos /></ClienteRoute>} />
                   <Route path='propuestas/:id' element={<Propuestas />} />
                   <Route path='chat/:id' element={<ChatProyecto />} />
+                  <Route path='mensajes' element={<Mensajes />} />
                 </Route>
               </Routes>
             </ProtectedRoute>

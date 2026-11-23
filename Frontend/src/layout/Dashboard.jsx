@@ -1,15 +1,24 @@
-import { Link, NavLink, Outlet, useNavigate } from "react-router-dom"
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom"
 import { useEffect, useRef, useState } from "react"
 import FP from "../assets/fotoPerfil.jpeg"
 import storeAuth from "../context/storeAuth"
 import storeProfile from "../context/storeProfile"
+import storeChat from "../context/storeChat"
+import { getSocket, closeSocket } from "../services/socket"
+import { listarProyectosPropios } from "../services/proyectoChatService"
 
 const Dashboard = () => {
   const navigate = useNavigate()
-  const { clearToken, rol } = storeAuth()
+  const location = useLocation()
+  const { clearToken, rol, token } = storeAuth()
   const { user } = storeProfile()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef(null)
+
+  const agregarMensaje = storeChat((s) => s.agregarMensaje)
+  const marcarNoLeido = storeChat((s) => s.marcarNoLeido)
+  const noLeidosMap = storeChat((s) => s.noLeidos)
+  const totalNoLeidos = Object.values(noLeidosMap).reduce((a, b) => a + b, 0)
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -17,6 +26,56 @@ const Dashboard = () => {
     }
     document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
+
+  // Chat en tiempo real para toda la sesión del dashboard (HU-014), sin backend de
+  // persistencia: se conecta un único socket, se une a la sala de cada proyecto propio
+  // y cualquier mensaje que llegue se guarda en storeChat (localStorage). Si el mensaje
+  // no es del chat que se está viendo en este momento, se marca como no leído (badge).
+  useEffect(() => {
+    if ((rol !== "carpintero" && rol !== "cliente") || !token) return
+
+    const socket = getSocket(token)
+    let activo = true
+
+    const unirseATodos = async () => {
+      try {
+        const proyectos = await listarProyectosPropios()
+        if (!activo) return
+        proyectos.forEach((p) => socket.emit("unirse-proyecto", p._id, () => {}))
+      } catch {
+        // silencioso: el badge/chat no debe bloquear el resto del dashboard
+      }
+    }
+
+    if (socket.connected) unirseATodos()
+    socket.on("connect", unirseATodos)
+
+    const alRecibirMensaje = (payload) => {
+      agregarMensaje(payload.proyecto, {
+        body: payload.body,
+        from: payload.from,
+        rol: payload.rol,
+        fecha: payload.fecha,
+      })
+      const viendoEseChat = location.pathname === `/dashboard/chat/${payload.proyecto}`
+      if (!viendoEseChat) marcarNoLeido(payload.proyecto)
+    }
+    socket.on("enviar-mensaje-front-back", alRecibirMensaje)
+
+    return () => {
+      activo = false
+      socket.off("connect", unirseATodos)
+      socket.off("enviar-mensaje-front-back", alRecibirMensaje)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rol, token, location.pathname])
+
+  // Cierra el socket al salir del dashboard (logout), para no dejar la conexión abierta.
+  useEffect(() => {
+    return () => {
+      if (!storeAuth.getState().token) closeSocket()
+    }
   }, [])
 
   const nombre = user?.nombre || user?.nombreCliente || (rol === "administrador" ? "Administrador" : "Usuario")
@@ -30,6 +89,7 @@ const Dashboard = () => {
           { to: "/dashboard/cv", label: "Mi currículum (CV)", icon: "▤" },
           { to: "/dashboard/modelos3d", label: "Mis modelos 3D", icon: "◇" },
           { to: "/dashboard/list", label: "Proyectos solicitados", icon: "▣" },
+          { to: "/dashboard/mensajes", label: "Mensajes", icon: "✉", badge: totalNoLeidos },
         ]
       : [
           { to: "/dashboard", label: "Resumen", icon: "▦" },
@@ -37,9 +97,11 @@ const Dashboard = () => {
           { to: "/dashboard/catalogo", label: "Catálogo y diseños 3D", icon: "◇" },
           { to: "/dashboard/solicitar", label: "Solicitar proyecto", icon: "+" },
           { to: "/dashboard/mis-proyectos", label: "Mis proyectos", icon: "▤" },
+          { to: "/dashboard/mensajes", label: "Mensajes", icon: "✉", badge: totalNoLeidos },
         ]
 
   const salir = () => {
+    closeSocket()
     clearToken()
     storeProfile.getState().clearUser?.()
     navigate("/login", { replace: true })
@@ -81,7 +143,13 @@ const Dashboard = () => {
               <NavLink key={link.to} to={link.to} end={link.to === "/dashboard"} className={({ isActive }) =>
                 `flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition ${isActive ? "bg-amber-100 text-amber-900" : "text-gray-600 hover:bg-gray-100"}`
               }>
-                <span className="text-lg">{link.icon}</span>{link.label}
+                <span className="text-lg">{link.icon}</span>
+                <span className="flex-1">{link.label}</span>
+                {link.badge > 0 && (
+                  <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded-full bg-red-600 text-white text-xs font-bold">
+                    {link.badge}
+                  </span>
+                )}
               </NavLink>
             ))}
           </nav>
@@ -101,8 +169,15 @@ const Dashboard = () => {
           <div className="md:hidden flex gap-2 overflow-x-auto pb-4">
             {links.map((link) => (
               <NavLink key={link.to} to={link.to} end={link.to === "/dashboard"} className={({ isActive }) =>
-                `whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold ${isActive ? "bg-amber-700 text-white" : "bg-white text-gray-700 border"}`
-              }>{link.label}</NavLink>
+                `relative whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold ${isActive ? "bg-amber-700 text-white" : "bg-white text-gray-700 border"}`
+              }>
+                {link.label}
+                {link.badge > 0 && (
+                  <span className="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[1.1rem] h-[1.1rem] px-1 rounded-full bg-red-600 text-white text-[10px] font-bold">
+                    {link.badge}
+                  </span>
+                )}
+              </NavLink>
             ))}
           </div>
           <Outlet />

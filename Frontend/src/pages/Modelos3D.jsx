@@ -7,9 +7,12 @@ import {
 } from "../services/carpinteroService"
 import CarpinteroNav from "../components/carpintero/CarpinteroNav"
 import ThreeViewer from "../components/model3D/model3DViewer.jsx"
+import { contarPalabras, REGEX } from "../helpers/validaciones"
 
 const EXTENSIONES = [".obj", ".glb", ".gltf"]
 const MAX_MB = 50
+const MAX_PALABRAS_DESC = 50
+const CONTENIDO_VALIDO = /[A-Za-zÁÉÍÓÚáéíóúÑñÜü0-9]{2,}/
 const previsualizable = (m) => ["glb", "gltf"].includes(m.formato)
 
 const Modal = ({ children, onClose, ancho = "max-w-md" }) => (
@@ -25,6 +28,31 @@ const FormularioModelo = ({ modelo, onClose, onSaved, onUnauthorized }) => {
   const [archivo, setArchivo] = useState(null)
   const [progreso, setProgreso] = useState(0)
   const [saving, setSaving] = useState(false)
+  const [errors, setErrors] = useState({})
+
+  const validar = () => {
+    const errs = {}
+    const nombre = name.trim()
+    if (!nombre) errs.name = "El nombre es obligatorio"
+    else if (nombre.length < 2) errs.name = "Mínimo 2 caracteres"
+    else if (nombre.length > 40) errs.name = "Máximo 40 caracteres"
+    else if (!REGEX.nombre.test(nombre)) errs.name = "Solo se permiten letras"
+
+    const desc = description.trim()
+    if (!desc) {
+      errs.description = "Debes poner la descripción"
+    } else if (!CONTENIDO_VALIDO.test(desc)) {
+      errs.description = "Debes poner la descripción correcta, no solo un símbolo o carácter suelto"
+    } else {
+      const palabras = contarPalabras(desc)
+      if (palabras > MAX_PALABRAS_DESC) {
+        errs.description = `La descripción no puede tener más de ${MAX_PALABRAS_DESC} palabras (tiene ${palabras})`
+      }
+    }
+
+    setErrors(errs)
+    return Object.keys(errs).length === 0
+  }
 
   const elegirArchivo = (e) => {
     const f = e.target.files[0]
@@ -45,7 +73,7 @@ const FormularioModelo = ({ modelo, onClose, onSaved, onUnauthorized }) => {
 
   const enviar = async (e) => {
     e.preventDefault()
-    if (!name.trim()) return toast.error("El nombre es obligatorio")
+    if (!validar()) return
     if (!modelo && !archivo) return toast.error("Debes seleccionar un archivo 3D")
 
     const form = new FormData()
@@ -77,12 +105,31 @@ const FormularioModelo = ({ modelo, onClose, onSaved, onUnauthorized }) => {
 
         <div>
           <label className="block text-sm font-semibold mb-1">Nombre</label>
-          <input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej: Silla nórdica" />
+          <input
+            className={inputCls}
+            value={name}
+            onChange={(e) => { setName(e.target.value); setErrors((p) => ({ ...p, name: undefined })) }}
+            placeholder="Ej: Silla nórdica"
+          />
+          {errors.name && <p className="text-red-600 text-sm mt-1">{errors.name}</p>}
         </div>
 
         <div>
           <label className="block text-sm font-semibold mb-1">Descripción</label>
-          <textarea rows={3} className={inputCls} value={description} onChange={(e) => setDescription(e.target.value)} />
+          <textarea
+            rows={3}
+            className={inputCls}
+            value={description}
+            onChange={(e) => { setDescription(e.target.value); setErrors((p) => ({ ...p, description: undefined })) }}
+          />
+          <div className="flex justify-between items-start mt-1">
+            {errors.description ? (
+              <p className="text-red-600 text-sm">{errors.description}</p>
+            ) : <span />}
+            <p className={`text-xs ml-2 whitespace-nowrap ${contarPalabras(description) > MAX_PALABRAS_DESC ? "text-red-600" : "text-gray-400"}`}>
+              {contarPalabras(description)}/{MAX_PALABRAS_DESC} palabras
+            </p>
+          </div>
         </div>
 
         <div>

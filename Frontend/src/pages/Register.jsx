@@ -7,8 +7,10 @@ import { useFetch } from "../hooks/useFetch"
 import logo_forget from "../../public/images/login.webp"
 import {
   reglaEmail, reglaPasswordNueva, reglaNombre, reglaCelular,
-  reglaCedulaRuc, reglaTextoCorto, soloDigitos,
+  reglaCedulaRuc, reglaMaxPalabras, soloDigitos, contarPalabras,
 } from "../helpers/validaciones"
+
+const MAX_PALABRAS_DIRECCION = 50
 
 const inputCls =
     "block w-full rounded-md border border-gray-300 py-1 px-1.5 text-gray-500"
@@ -19,9 +21,10 @@ export const Register = () => {
     const [showAviso, setShowAviso] = useState(false)
 
     const fetchDataBackend = useFetch()
-    const { register, handleSubmit, reset, formState: { errors } } = useForm({
+    const { register, handleSubmit, reset, watch, formState: { errors } } = useForm({
         shouldUnregister: true,
     })
+    const direccionValor = watch("direccion", "")
 
     const elegirTipo = (nuevoTipo) => {
         if (nuevoTipo === tipo) return
@@ -35,8 +38,10 @@ export const Register = () => {
             tipo === "carpintero"
                 ? `${import.meta.env.VITE_BACKEND_URL}/api/carpintero/registro`
                 : `${import.meta.env.VITE_BACKEND_URL}/api/cliente/registro`
+        const datosAEnviar = { ...dataForm }
+        delete datosAEnviar.confirmpassword
         try {
-            await fetchDataBackend(url, dataForm, "POST")
+            await fetchDataBackend(url, datosAEnviar, "POST")
             reset()
         } catch {
             // useFetch ya muestra el toast con el error
@@ -132,8 +137,13 @@ export const Register = () => {
                                     <div className="mb-3">
                                         <label className="mb-2 block text-sm font-semibold">Dirección</label>
                                         <input type="text" placeholder="Ingresa tu dirección" className={inputCls}
-                                            {...register("direccion", reglaTextoCorto("La dirección", 5, 120))} />
-                                        {errors.direccion && <p className="text-red-800">{errors.direccion.message}</p>}
+                                            {...register("direccion", reglaMaxPalabras("La dirección", MAX_PALABRAS_DIRECCION))} />
+                                        <div className="flex justify-between items-start mt-1">
+                                            {errors.direccion ? <p className="text-red-800 text-sm">{errors.direccion.message}</p> : <span />}
+                                            <p className={`text-xs ml-2 whitespace-nowrap ${contarPalabras(direccionValor) > MAX_PALABRAS_DIRECCION ? "text-red-600" : "text-gray-400"}`}>
+                                                {contarPalabras(direccionValor)}/{MAX_PALABRAS_DIRECCION} palabras
+                                            </p>
+                                        </div>
                                     </div>
 
                                     <div className="mb-3">
@@ -180,7 +190,7 @@ export const Register = () => {
                                 <div className="relative">
                                     <input
                                         type={showPassword ? "text" : "password"}
-                                        placeholder="Mínimo 8 caracteres"
+                                        placeholder="Más de 10 caracteres"
                                         className="w-full rounded-md border border-gray-300 px-3 py-2 pr-10"
                                         {...register("password", reglaPasswordNueva)}
                                     />
@@ -194,6 +204,20 @@ export const Register = () => {
                                     </button>
                                 </div>
                                 {errors.password && <p className="text-red-800">{errors.password.message}</p>}
+                            </div>
+
+                            <div className="mb-3">
+                                <label className="block text-sm font-semibold mb-1">Confirmar contraseña</label>
+                                <input
+                                    type={showPassword ? "text" : "password"}
+                                    placeholder="Repite la contraseña"
+                                    className="w-full rounded-md border border-gray-300 px-3 py-2"
+                                    {...register("confirmpassword", {
+                                        required: "Debes confirmar la contraseña",
+                                        validate: (v) => v === watch("password") || "Las contraseñas no coinciden",
+                                    })}
+                                />
+                                {errors.confirmpassword && <p className="text-red-800">{errors.confirmpassword.message}</p>}
                             </div>
 
                             <div className="mb-3">

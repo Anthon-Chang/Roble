@@ -1,5 +1,8 @@
 import { useForm } from "react-hook-form"
 import storeTreatments from "../../context/storEstado"
+import { reglaMaxPalabras, contarPalabras } from "../../helpers/validaciones"
+
+const MAX_PALABRAS_DETALLE = 50
 
 const ModalTreatments = ({ proyectoID }) => {
 
@@ -7,8 +10,10 @@ const ModalTreatments = ({ proyectoID }) => {
         register,
         handleSubmit,
         formState: { errors },
+        watch,
         reset
     } = useForm()
+    const detalleValor = watch("detalle", "")
 
     const { toggleModal, registerTreatments } = storeTreatments()
 
@@ -69,11 +74,16 @@ const ModalTreatments = ({ proyectoID }) => {
                             placeholder="Ingresa el detalle"
                             className="block w-full rounded-md border border-gray-300 py-1 px-2
                             text-gray-500 mb-5 bg-gray-50"
-                            {...register("detalle", { required: "El detalle es obligatorio" })}
+                            {...register("detalle", reglaMaxPalabras("El detalle", MAX_PALABRAS_DETALLE))}
                         />
-                        {errors.detalle && (
-                            <p className="text-red-600">{errors.detalle.message}</p>
-                        )}
+                        <div className="flex justify-between items-start mb-5">
+                            {errors.detalle ? (
+                                <p className="text-red-600 text-sm">{errors.detalle.message}</p>
+                            ) : <span />}
+                            <p className={`text-xs ml-2 whitespace-nowrap ${contarPalabras(detalleValor) > MAX_PALABRAS_DETALLE ? "text-red-600" : "text-gray-400"}`}>
+                                {contarPalabras(detalleValor)}/{MAX_PALABRAS_DETALLE} palabras
+                            </p>
+                        </div>
                     </div>
 
                     {/* Prioridad */}

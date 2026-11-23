@@ -5,10 +5,11 @@ import { ToastContainer, toast } from "react-toastify"
 import storeAuth from "../../context/storeAuth"
 import { listarCarpinteros, mensajeError, solicitarProyecto } from "../../services/clienteService"
 import ClienteNav from "../../components/cliente/ClienteNav"
-import { reglaTextoCorto } from "../../helpers/validaciones"
+import { reglaTextoCorto, reglaMaxPalabras, contarPalabras, CONTENIDO_VALIDO } from "../../helpers/validaciones"
 
 const hoy = () => new Date().toISOString().slice(0, 10)
 const inputCls = "block w-full rounded-md border border-gray-300 py-1 px-2 text-gray-700 bg-white"
+const MAX_PALABRAS_DESC = 50
 
 const SolicitarProyecto = () => {
   const navigate = useNavigate()
@@ -17,7 +18,8 @@ const SolicitarProyecto = () => {
   const [carpinteros, setCarpinteros] = useState([])
   const [imagen, setImagen] = useState(null)
   const [saving, setSaving] = useState(false)
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm()
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm()
+  const descripcionValor = watch("descripcionProyecto", "")
 
   useEffect(() => {
     const cargar = async () => {
@@ -96,14 +98,28 @@ const SolicitarProyecto = () => {
 
         <div>
           <label className="mb-1 block text-sm font-semibold">Descripción</label>
-          <textarea rows={4} className={inputCls} placeholder="Describe medidas, estilo, uso..." {...register("descripcionProyecto", reglaTextoCorto("La descripción", 10, 500))} />
-          {errors.descripcionProyecto && <p className="text-red-800">{errors.descripcionProyecto.message}</p>}
+          <textarea rows={4} className={inputCls} placeholder="Describe medidas, estilo, uso..." {...register("descripcionProyecto", reglaMaxPalabras("La descripción", MAX_PALABRAS_DESC))} />
+          <div className="flex justify-between items-start mt-1">
+            {errors.descripcionProyecto ? <p className="text-red-800 text-sm">{errors.descripcionProyecto.message}</p> : <span />}
+            <p className={`text-xs ml-2 whitespace-nowrap ${contarPalabras(descripcionValor) > MAX_PALABRAS_DESC ? "text-red-600" : "text-gray-400"}`}>
+              {contarPalabras(descripcionValor)}/{MAX_PALABRAS_DESC} palabras
+            </p>
+          </div>
         </div>
 
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
             <label className="mb-1 block text-sm font-semibold">Tipo de madera (opcional)</label>
-            <input className={inputCls} placeholder="Roble, cedro..." {...register("tipoMadera")} />
+            <input
+              className={inputCls}
+              placeholder="Roble, cedro..."
+              {...register("tipoMadera", {
+                validate: (v) =>
+                  !v || !v.trim() || CONTENIDO_VALIDO.test(v.trim()) ||
+                  "Escribe un tipo de madera válido, no solo un punto o símbolo",
+              })}
+            />
+            {errors.tipoMadera && <p className="text-red-800">{errors.tipoMadera.message}</p>}
           </div>
           <div>
             <label className="mb-1 block text-sm font-semibold">Fecha de entrega deseada</label>
