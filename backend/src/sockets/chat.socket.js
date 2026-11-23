@@ -1,6 +1,8 @@
 import { autenticarToken } from "../middlewares/JWT.js"
 import Proyecto from "../models/Proyecto.js"
+import Mensaje from "../models/Mensaje.js"
 import { idValido } from "../helpers/firestore.js"
+import { esParticipante } from "../helpers/participantes.js"
 
 const MAX_MENSAJE = 1000
 // Máximo de mensajes por conexión en la ventana (frena el spam y el flood de una sola conexión)
@@ -8,13 +10,6 @@ const MAX_MENSAJES = 20
 const VENTANA_MS = 10 * 1000
 
 const sala = (proyectoId) => `proyecto:${proyectoId}`
-
-// Solo participan del chat el carpintero dueño del proyecto y el cliente del proyecto.
-const esParticipante = (proyecto, user) =>
-    !!proyecto &&
-    proyecto.estadoProyecto !== false &&
-    ((user.rol === "carpintero" && proyecto.carpintero === user._id) ||
-        (user.rol === "cliente" && proyecto.cliente === user._id))
 
 const responder = (ack, datos) => typeof ack === "function" && ack(datos)
 
@@ -58,32 +53,49 @@ export const chatSocket = (io) => {
             }
         })
 
-        // 3) Enviar un mensaje: solo a la sala del proyecto, con el remitente tomado del token (no del payload)
-        socket.on("enviar-mensaje-front-back", (payload, ack) => {
-            const { proyecto, body } = payload && typeof payload === "object" ? payload : {}
+        // 3) Enviar un mensaje: se guarda en Firestore y se reparte a TODA la sala (incluido
+        // quien lo envía), así el remitente queda con el mismo _id/fecha que el resto y no hay
+        // que fabricar un mensaje "optimista" aparte en el frontend.
+        socket.on("enviar-mensaje-front-back", async (payload, ack) => {
+            try {
+                const { proyecto, body } = payload && typeof payload === "object" ? payload : {}
 
-            if (!idValido(proyecto) || !socket.rooms.has(sala(proyecto))) {
-                return responder(ack, { ok: false, msg: "Primero debes unirte al proyecto" })
-            }
-            if (typeof body !== "string" || body.trim() === "" || body.length > MAX_MENSAJE) {
-                return responder(ack, { ok: false, msg: `El mensaje debe tener entre 1 y ${MAX_MENSAJE} caracteres` })
-            }
+                if (!idValido(proyecto) || !socket.rooms.has(sala(proyecto))) {
+                    return responder(ack, { ok: false, msg: "Primero debes unirte al proyecto" })
+                }
+                if (typeof body !== "string" || body.trim() === "" || body.length > MAX_MENSAJE) {
+                    return responder(ack, { ok: false, msg: `El mensaje debe tener entre 1 y ${MAX_MENSAJE} caracteres` })
+                }
 
-            const ahora = Date.now()
-            enviados = enviados.filter((t) => ahora - t < VENTANA_MS)
-            if (enviados.length >= MAX_MENSAJES) {
-                return responder(ack, { ok: false, msg: "Estás enviando mensajes demasiado rápido" })
-            }
-            enviados.push(ahora)
+                const ahora = Date.now()
+                enviados = enviados.filter((t) => ahora - t < VENTANA_MS)
+                if (enviados.length >= MAX_MENSAJES) {
+                    return responder(ack, { ok: false, msg: "Estás enviando mensajes demasiado rápido" })
+                }
+                enviados.push(ahora)
 
-            socket.to(sala(proyecto)).emit("enviar-mensaje-front-back", {
-                proyecto,
-                body: body.trim(),
-                from: `${user.nombre || ""} ${user.apellido || ""}`.trim() || user.rol,
-                rol: user.rol,
-                fecha: new Date().toISOString(),
-            })
-            responder(ack, { ok: true })
+                const guardado = await Mensaje.crear({
+                    proyecto,
+                    body: body.trim(),
+                    remitente: user._id,
+                    rol: user.rol,
+                    from: `${user.nombre || ""} ${user.apellido || ""}`.trim() || user.rol,
+                })
+
+                io.to(sala(proyecto)).emit("enviar-mensaje-front-back", {
+                    _id: guardado._id,
+                    proyecto,
+                    body: guardado.body,
+                    from: guardado.from,
+                    remitente: guardado.remitente,
+                    rol: guardado.rol,
+                    fecha: guardado.createdAt,
+                })
+                responder(ack, { ok: true })
+            } catch (error) {
+                console.error(error)
+                responder(ack, { ok: false, msg: "Error en el servidor" })
+            }
         })
     })
 }

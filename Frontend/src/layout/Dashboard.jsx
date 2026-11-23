@@ -3,12 +3,16 @@ import { useEffect, useRef, useState } from "react"
 import FP from "../assets/fotoPerfil.jpeg"
 import storeAuth from "../context/storeAuth"
 import storeProfile from "../context/storeProfile"
+import storeChat from "../context/storeChat"
 import { cerrarSesion } from "../services/sesionService"
+import { closeSocket } from "../services/socket"
 
 const Dashboard = () => {
   const navigate = useNavigate()
   const { clearToken, rol } = storeAuth()
   const { user } = storeProfile()
+  const cargarResumen = storeChat((s) => s.cargarResumen)
+  const totalNoLeidos = storeChat((s) => s.totalNoLeidos(user?._id))
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef(null)
 
@@ -20,11 +24,19 @@ const Dashboard = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
+  // El resumen de chats (para el badge de "Mensajes") se refresca al entrar y cada 30s.
+  useEffect(() => {
+    if (rol !== "carpintero" && rol !== "cliente") return
+    cargarResumen()
+    const intervalo = setInterval(cargarResumen, 30000)
+    return () => clearInterval(intervalo)
+  }, [rol])
+
   const nombre = user?.nombre || user?.nombreCliente || (rol === "administrador" ? "Administrador" : "Usuario")
   const links = rol === "administrador"
     ? [
         { to: "/dashboard/admin", label: "Panel principal", icon: "▦" },
-        { to: "/dashboard/admin/quejas", label: "Quejas y sugerencias", icon: "✉" },
+        { to: "/dashboard/admin/quejas", label: "Quejas y sugerencias", icon: "⚑" },
         { to: "/dashboard/admin/sanciones", label: "Sanciones", icon: "⚠" },
       ]
     : rol === "carpintero"
@@ -34,6 +46,7 @@ const Dashboard = () => {
           { to: "/dashboard/modelos3d", label: "Mis modelos 3D", icon: "◇" },
           { to: "/dashboard/list", label: "Proyectos solicitados", icon: "▣" },
           { to: "/dashboard/mis-sanciones", label: "Mis sanciones", icon: "⚠" },
+          { to: "/dashboard/mensajes", label: "Mensajes", icon: "✉︎", badge: totalNoLeidos },
         ]
       : [
           { to: "/dashboard", label: "Resumen", icon: "▦" },
@@ -41,11 +54,13 @@ const Dashboard = () => {
           { to: "/dashboard/catalogo", label: "Catálogo y diseños 3D", icon: "◇" },
           { to: "/dashboard/solicitar", label: "Solicitar proyecto", icon: "+" },
           { to: "/dashboard/mis-proyectos", label: "Mis proyectos", icon: "▤" },
-          { to: "/dashboard/quejas", label: "Quejas y sugerencias", icon: "✉" },
+          { to: "/dashboard/quejas", label: "Quejas y sugerencias", icon: "⚑" },
+          { to: "/dashboard/mensajes", label: "Mensajes", icon: "✉︎", badge: totalNoLeidos },
         ]
 
   const salir = async () => {
     await cerrarSesion()
+    closeSocket()
     clearToken()
     storeProfile.getState().clearUser?.()
     navigate("/login", { replace: true })
@@ -85,7 +100,13 @@ const Dashboard = () => {
               <NavLink key={link.to} to={link.to} end={link.to === "/dashboard"} className={({ isActive }) =>
                 `flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition ${isActive ? "bg-amber-100 text-amber-900" : "text-gray-600 hover:bg-gray-100"}`
               }>
-                <span className="text-lg">{link.icon}</span>{link.label}
+                <span className="text-lg">{link.icon}</span>
+                <span className="flex-1">{link.label}</span>
+                {!!link.badge && (
+                  <span className="min-w-[1.25rem] text-center rounded-full bg-red-600 px-1.5 py-0.5 text-[11px] font-bold text-white">
+                    {link.badge > 9 ? "9+" : link.badge}
+                  </span>
+                )}
               </NavLink>
             ))}
           </nav>
@@ -105,8 +126,15 @@ const Dashboard = () => {
           <div className="md:hidden flex gap-2 overflow-x-auto pb-4">
             {links.map((link) => (
               <NavLink key={link.to} to={link.to} end={link.to === "/dashboard"} className={({ isActive }) =>
-                `whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold ${isActive ? "bg-amber-700 text-white" : "bg-white text-gray-700 border"}`
-              }>{link.label}</NavLink>
+                `whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold flex items-center gap-1.5 ${isActive ? "bg-amber-700 text-white" : "bg-white text-gray-700 border"}`
+              }>
+                {link.label}
+                {!!link.badge && (
+                  <span className="min-w-[1.1rem] text-center rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                    {link.badge > 9 ? "9+" : link.badge}
+                  </span>
+                )}
+              </NavLink>
             ))}
           </div>
           <Outlet />

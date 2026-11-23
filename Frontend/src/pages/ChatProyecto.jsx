@@ -1,74 +1,100 @@
 import { useEffect, useRef, useState } from "react"
 import { useParams } from "react-router"
 import { useForm } from "react-hook-form"
-import { io } from "socket.io-client"
 import { ToastContainer, toast } from "react-toastify"
 import storeAuth from "../context/storeAuth"
+import storeProfile from "../context/storeProfile"
+import storeChat from "../context/storeChat"
+import { getSocket } from "../services/socket"
+import { historialMensajes, mensajeError } from "../services/mensajeService"
 
 const emojis = ["😀", "😂", "😍", "😎", "😭", "🔥", "👍", "❤️"]
 
-// Chat en tiempo real de un proyecto (Sprint 3 · HU-014), vía Socket.IO.
-// A diferencia de src/pages/Chat.jsx (chat genérico sin sala ni autenticación),
-// este componente:
-//   1) envía el JWT en el handshake (socket.handshake.auth.token), como exige
-//      chatSocket en el backend.
-//   2) se une a la sala del proyecto con "unirse-proyecto" antes de enviar nada.
-// Ruta sugerida: dashboard/chat/:id  (id = _id del proyecto)
+// Chat en tiempo real de un proyecto (Sprint 3 · HU-014), ahora con historial persistente
+// (los mensajes se guardan en el backend, ver backend/src/models/Mensaje.js):
+//   1) al entrar, se trae el historial por REST (GET /api/mensaje/:proyectoId)
+//   2) la conexión en vivo usa el socket compartido (services/socket.js) con el JWT en el
+//      handshake y se une a la sala del proyecto con "unirse-proyecto" antes de enviar nada
+//   3) el servidor reparte cada mensaje nuevo a TODA la sala (incluido quien lo envía), así
+//      que aquí no se "adivina" el mensaje propio: siempre llega por el socket
+// Ruta: dashboard/chat/:id  (id = _id del proyecto)
 const ChatProyecto = () => {
   const { id: proyectoId } = useParams()
   const token = storeAuth((s) => s.token)
-  const rol = storeAuth((s) => s.rol)
-  const [socket, setSocket] = useState(null)
+  const miId = storeProfile((s) => s.user?._id)
+  const marcarLeido = storeChat((s) => s.marcarLeido)
+  const cargarResumen = storeChat((s) => s.cargarResumen)
   const [isConnected, setIsConnected] = useState(false)
   const [enSala, setEnSala] = useState(false)
-  const [responses, setResponses] = useState([])
+  const [cargando, setCargando] = useState(true)
+  const [mensajes, setMensajes] = useState([])
   const [showEmojis, setShowEmojis] = useState(false)
   const bottomRef = useRef(null)
 
   const { register, handleSubmit, reset, setValue, watch } = useForm({ defaultValues: { message: "" } })
 
+  // Historial (carga inicial)
+  useEffect(() => {
+    if (!proyectoId) return
+    setCargando(true)
+    historialMensajes(proyectoId)
+      .then(setMensajes)
+      .catch((error) => toast.error(mensajeError(error, "No se pudo cargar el historial del chat")))
+      .finally(() => setCargando(false))
+  }, [proyectoId])
+
+  // Conexión en vivo
   useEffect(() => {
     if (!token || !proyectoId) return
+    const socket = getSocket(token)
 
-    const newSocket = io(import.meta.env.VITE_BACKEND_URL, {
-      transports: ["websocket"],
-      auth: { token },
-    })
-
-    newSocket.on("connect", () => {
-      setIsConnected(true)
-      newSocket.emit("unirse-proyecto", proyectoId, (ack) => {
+    const unirse = () => {
+      socket.emit("unirse-proyecto", proyectoId, (ack) => {
         if (ack?.ok) setEnSala(true)
         else toast.error(ack?.msg || "No se pudo unir a la sala del proyecto")
       })
-    })
+    }
 
-    newSocket.on("disconnect", () => {
-      setIsConnected(false)
-      setEnSala(false)
-    })
+    setIsConnected(socket.connected)
+    if (socket.connected) unirse()
 
-    newSocket.on("connect_error", (err) => toast.error(err.message || "Error de conexión al chat"))
+    const alConectar = () => { setIsConnected(true); unirse() }
+    const alDesconectar = () => { setIsConnected(false); setEnSala(false) }
+    const alLlegarMensaje = (payload) => {
+      if (payload.proyecto !== proyectoId) return
+      setMensajes((prev) => [...prev, payload])
+      marcarLeido(proyectoId)
+      cargarResumen()
+    }
 
-    newSocket.on("enviar-mensaje-front-back", (payload) => {
-      setResponses((prev) => [...prev, payload])
-    })
+    socket.on("connect", alConectar)
+    socket.on("disconnect", alDesconectar)
+    socket.on("connect_error", (err) => toast.error(err.message || "Error de conexión al chat"))
+    socket.on("enviar-mensaje-front-back", alLlegarMensaje)
 
-    setSocket(newSocket)
-    return () => newSocket.disconnect()
+    return () => {
+      socket.off("connect", alConectar)
+      socket.off("disconnect", alDesconectar)
+      socket.off("enviar-mensaje-front-back", alLlegarMensaje)
+    }
   }, [token, proyectoId])
+
+  // Entrar a este chat lo marca como leído; también al llegar un mensaje mientras está abierto.
+  useEffect(() => {
+    marcarLeido(proyectoId)
+  }, [proyectoId])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [responses])
+  }, [mensajes])
 
   const handleMessageChat = (data) => {
-    if (!socket || !enSala) return toast.error("Todavía no estás conectado a la sala del proyecto")
+    const socket = getSocket(token)
+    if (!enSala) return toast.error("Todavía no estás conectado a la sala del proyecto")
     if (!data.message?.trim()) return
 
     socket.emit("enviar-mensaje-front-back", { proyecto: proyectoId, body: data.message }, (ack) => {
       if (!ack?.ok) return toast.error(ack?.msg || "No se pudo enviar el mensaje")
-      setResponses((prev) => [...prev, { body: data.message, rol, from: "Yo" }])
       reset({ message: "" })
     })
   }
@@ -86,17 +112,26 @@ const ChatProyecto = () => {
         </div>
 
         <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-gray-100">
-          {responses.map((r, i) => (
-            <div
-              key={i}
-              className={`max-w-[75%] px-4 py-2 rounded-xl text-sm break-words ${
-                r.from === "Yo" ? "bg-[#f59e0b] text-white ml-auto rounded-br-none" : "bg-gray-300 text-gray-900 mr-auto rounded-bl-none"
-              }`}
-            >
-              <p className="text-xs opacity-70 mb-1">{r.from}</p>
-              {r.body}
-            </div>
-          ))}
+          {cargando ? (
+            <p className="text-center text-gray-400 text-sm">Cargando mensajes...</p>
+          ) : mensajes.length === 0 ? (
+            <p className="text-center text-gray-400 text-sm">Todavía no hay mensajes. ¡Escribe el primero!</p>
+          ) : (
+            mensajes.map((r, i) => {
+              const esMio = r.remitente === miId
+              return (
+                <div
+                  key={r._id || i}
+                  className={`max-w-[75%] px-4 py-2 rounded-xl text-sm break-words ${
+                    esMio ? "bg-[#f59e0b] text-white ml-auto rounded-br-none" : "bg-gray-300 text-gray-900 mr-auto rounded-bl-none"
+                  }`}
+                >
+                  <p className="text-xs opacity-70 mb-1">{esMio ? "Yo" : r.from}</p>
+                  {r.body}
+                </div>
+              )
+            })
+          )}
           <div ref={bottomRef} />
         </div>
 

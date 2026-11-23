@@ -49,6 +49,7 @@ import Quejas from './pages/cliente/Quejas'
 import AdminQuejas from './pages/AdminQuejas'
 import AdminSanciones from './pages/AdminSanciones'
 import MisSanciones from './pages/MisSanciones'
+import Mensajes from './pages/Mensajes'
 
 const DashboardInicio = () => {
   const rol = storeAuth((state) => state.rol)
@@ -139,6 +140,7 @@ function App() {
                   <Route path='mis-proyectos' element={<ClienteRoute><MisProyectos /></ClienteRoute>} />
                   <Route path='quejas' element={<ClienteRoute><Quejas /></ClienteRoute>} />
                   <Route path='propuestas/:id' element={<Propuestas />} />
+                  <Route path='mensajes' element={<Mensajes />} />
                   <Route path='chat/:id' element={<ChatProyecto />} />
                 </Route>
               </Routes>
