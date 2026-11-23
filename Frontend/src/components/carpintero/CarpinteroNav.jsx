@@ -10,6 +10,7 @@ const links = [
   { to: "/dashboard/estado-perfil", label: "Estado del perfil" },
   { to: "/dashboard/cv", label: "Mi CV" },
   { to: "/dashboard/modelos3d", label: "Modelos 3D" },
+  { to: "/dashboard/mis-sanciones", label: "Mis sanciones" },
 ]
 
 const CarpinteroNav = () => (

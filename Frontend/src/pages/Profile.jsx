@@ -1,7 +1,5 @@
-import { useEffect } from 'react'
 import CardPassword from '../components/profile/CardPassword'
 import { CardProfile } from '../components/profile/CardProfile'
-import { CardProfileOwner } from '../components/profile/CardProfileOwner'
 import FormProfile from '../components/profile/FormProfile'
 import storeProfile from '../context/storeProfile'
 
@@ -16,6 +14,9 @@ const Profile = () => {
     )
   }
 
+  // El administrador no tiene endpoint de cambio de contraseña (no existe en el backend).
+  const puedeCambiarPassword = user.rol !== 'administrador'
+
   return (
     <>
       <div>
@@ -26,29 +27,25 @@ const Profile = () => {
         </p>
       </div>
 
-      {user.rol === 'cliente' ? (
-        <CardProfileOwner />
-      ) : (
-        <>
-          <div className="flex justify-around gap-x-8 flex-wrap gap-y-8 md:flex-nowrap">
-            <div className="w-full md:w-1/2">
-              <CardProfile />
-            </div>
+      <div className="flex justify-around gap-x-8 flex-wrap gap-y-8 md:flex-nowrap">
+        <div className="w-full md:w-1/2">
+          <CardProfile />
+        </div>
+      </div>
+
+      <div className="flex justify-around gap-x-8 flex-wrap gap-y-8 md:flex-nowrap">
+        <div className={`w-full md:w-11/12 flex flex-col md:flex-row gap-x-8 mx-auto justify-center items-center`}>
+          <div className={puedeCambiarPassword ? "w-full md:w-5/12" : "w-full md:w-1/2"}>
+            <FormProfile />
           </div>
 
-          <div className="flex justify-around gap-x-8 flex-wrap gap-y-8 md:flex-nowrap">
-            <div className="w-full md:w-11/12 flex flex-col md:flex-row gap-x-8 mx-auto justify-center items-center">
-              <div className="w-full md:w-5/12">
-                <FormProfile />
-              </div>
-
-              <div className="w-full md:w-5/12">
-                <CardPassword />
-              </div>
+          {puedeCambiarPassword && (
+            <div className="w-full md:w-5/12">
+              <CardPassword />
             </div>
-          </div>
-        </>
-      )}
+          )}
+        </div>
+      </div>
     </>
   )
 }

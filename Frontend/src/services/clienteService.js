@@ -19,6 +19,20 @@ export const loginUnificado = async ({ email, password }) => {
   return data // { token, rol: "cliente", _id, nombre, apellido, email }
 }
 
+// ---------- Perfil propio del cliente (HU-020) ----------
+export const actualizarPerfilCliente = async (cambios) =>
+  (await axios.put(`${API}/api/cliente/actualizarperfil`, cambios, auth())).data
+
+export const subirFotoCliente = async (archivo, onProgress) => {
+  const form = new FormData()
+  form.append("foto", archivo)
+  const { data } = await axios.put(`${API}/api/cliente/foto`, form, {
+    ...auth(),
+    onUploadProgress: (e) => e.total && onProgress?.(Math.round((e.loaded * 100) / e.total)),
+  })
+  return data // { msg, fotoUrl }
+}
+
 export const listarCarpinteros = async () => (await axios.get(`${API}/api/carpintero/aprobados`, auth())).data
 export const detalleCarpintero = async (id) => (await axios.get(`${API}/api/carpintero/aprobados/${id}`, auth())).data
 

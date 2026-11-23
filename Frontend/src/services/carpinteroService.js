@@ -27,6 +27,16 @@ export const guardarCV = async (archivo, existe, onProgress) => {
   return data
 }
 
+export const subirFotoCarpintero = async (archivo, onProgress) => {
+  const form = new FormData()
+  form.append("foto", archivo)
+  const { data } = await axios.put(`${API}/api/carpintero/foto`, form, {
+    ...auth(),
+    onUploadProgress: (e) => e.total && onProgress?.(Math.round((e.loaded * 100) / e.total)),
+  })
+  return data // { msg, fotoUrl }
+}
+
 // ---------- Modelos 3D ----------
 export const listarMisModelos = async () => (await axios.get(`${API}/api/models/mis-modelos`, auth())).data.data
 

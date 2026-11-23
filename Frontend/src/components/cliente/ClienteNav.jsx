@@ -5,6 +5,7 @@ const links = [
   { to: "/dashboard/catalogo", label: "Catálogo" },
   { to: "/dashboard/solicitar", label: "Solicitar proyecto" },
   { to: "/dashboard/mis-proyectos", label: "Mis proyectos" },
+  { to: "/dashboard/quejas", label: "Quejas y sugerencias" },
 ]
 
 const ClienteNav = () => (

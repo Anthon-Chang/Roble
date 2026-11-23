@@ -29,3 +29,24 @@ export async function rechazarCarpintero(id, motivo) {
   const { data } = await axios.put(`${API}/api/admin/carpinteros/${id}/rechazar`, { motivo }, auth())
   return data // { msg, carpintero }
 }
+
+// ---------- Perfil propio del administrador (HU-020) ----------
+export async function perfilAdmin() {
+  const { data } = await axios.get(`${API}/api/admin/perfil`, auth())
+  return data
+}
+
+export async function actualizarPerfilAdmin(cambios) {
+  const { data } = await axios.put(`${API}/api/admin/actualizarperfil`, cambios, auth())
+  return data
+}
+
+export async function subirFotoAdmin(archivo, onProgress) {
+  const form = new FormData()
+  form.append("foto", archivo)
+  const { data } = await axios.put(`${API}/api/admin/foto`, form, {
+    ...auth(),
+    onUploadProgress: (e) => e.total && onProgress?.(Math.round((e.loaded * 100) / e.total)),
+  })
+  return data // { msg, fotoUrl }
+}

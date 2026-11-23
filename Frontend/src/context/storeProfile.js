@@ -24,11 +24,11 @@ const storeProfile = create((set) => ({
     if (!storedUser?.state?.token) return
 
     const rol = storedUser.state.rol
-    
-    if (rol === "administrador") return
 
     const endpoint =
-      rol === "carpintero"
+      rol === "administrador"
+        ? "api/admin/perfil"
+        : rol === "carpintero"
         ? "api/carpintero/perfil"
         : "api/cliente/perfil"
 
