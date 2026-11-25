@@ -3,6 +3,7 @@ import Estado, { PRIORIDADES } from "../models/Estado.js"
 import Proyecto from "../models/Proyecto.js"
 import Cliente from "../models/Cliente.js"
 import { reservar, liberar } from "../helpers/firestore.js"
+import { validarCedula } from "../helpers/validaciones.js"
 
 // Cliente de Stripe creado al usarse (así no falla al importar si la variable aún no está cargada)
 let stripe = null
@@ -12,6 +13,10 @@ const getStripe = () => {
 }
 
 const texto = (valor) => (typeof valor === "string" ? valor.trim() : "")
+
+// Total que realmente se cobra: precio + 12% de IVA (debe coincidir con lo que ve el cliente en el modal de pago)
+const IVA = 0.12
+const totalConIva = (precio) => Math.round(precio * (1 + IVA) * 100) / 100
 
 // Carga el proyecto de un estado y comprueba que el carpintero autenticado sea su dueño.
 const proyectoDelCarpintero = async (proyectoId, user) => {
@@ -89,7 +94,7 @@ const RESERVA_PAGO_MS = 2 * 60 * 1000
 const pagarEstado = async (req, res) => {
     let reservado = null
     try {
-        const { paymentMethodId, estadoId, cantidad, motivo } = req.body
+        const { paymentMethodId, estadoId, cantidad, motivo, cedula } = req.body
 
         if (!paymentMethodId || !estadoId) {
             return res.status(400).json({ msg: "Faltan datos obligatorios" })
@@ -115,15 +120,25 @@ const pagarEstado = async (req, res) => {
             return res.status(400).json({ msg: "Este estado ya fue pagado" })
         }
 
+        // Confirmación de identidad: quien paga debe escribir la cédula registrada en su cuenta
+        const { error: errorCedula, valor: cedulaValida } = validarCedula(cedula)
+        if (errorCedula) return res.status(400).json({ msg: errorCedula })
+
+        const cliente = await Cliente.porId(req.user._id)
+        if (!cliente || cliente.cedula !== cedulaValida) {
+            return res.status(403).json({ msg: "La cédula no coincide con la registrada en tu cuenta" })
+        }
+
+        const montoAPagar = totalConIva(estado.precio)
+
         // 🔐 Validación de cantidad (SOLO TESTING)
-        if (cantidad !== undefined && Number(cantidad) !== estado.precio) {
-            return res.status(400).json({ msg: `Cantidad incorrecta. El valor correcto es ${estado.precio}` })
+        if (cantidad !== undefined && Number(cantidad) !== montoAPagar) {
+            return res.status(400).json({ msg: `Cantidad incorrecta. El valor correcto es ${montoAPagar}` })
         }
 
         const stripeClient = getStripe()
 
-        // Un solo Customer de Stripe por cliente (antes se creaba uno nuevo en cada pago)
-        const cliente = await Cliente.porId(req.user._id)
+        // Un solo Customer de Stripe por cliente (antes se creaba uno nuevo en cada pago, y ya lo necesitamos para la cédula)
         let stripeCustomerId = cliente?.stripeCustomerId
         if (!stripeCustomerId) {
             const creado = await stripeClient.customers.create({
@@ -134,9 +149,9 @@ const pagarEstado = async (req, res) => {
             await Cliente.actualizar(req.user._id, { stripeCustomerId })
         }
 
-        // El monto REAL viene de la base de datos, nunca del cliente
+        // El monto REAL viene de la base de datos (precio + IVA), nunca del cliente
         const payment = await stripeClient.paymentIntents.create({
-            amount: Math.round(estado.precio * 100),
+            amount: Math.round(montoAPagar * 100),
             currency: "usd",
             description: motivo || `Pago estado: ${estado.nombre}`,
             payment_method: paymentMethodId,
@@ -151,7 +166,7 @@ const pagarEstado = async (req, res) => {
 
         if (payment.status === "succeeded") {
             await Estado.actualizar(estado._id, { estadoPago: "Pagado", stripePaymentId: payment.id })
-            return res.status(200).json({ msg: "Pago realizado exitosamente", montoCobrado: estado.precio })
+            return res.status(200).json({ msg: "Pago realizado exitosamente", montoCobrado: montoAPagar })
         }
 
         res.status(400).json({ msg: `Pago no completado: ${payment.status}` })
