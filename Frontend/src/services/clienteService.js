@@ -19,6 +19,18 @@ export const loginUnificado = async ({ email, password }) => {
   return data // { token, rol: "cliente", _id, nombre, apellido, email }
 }
 
+// Recuperar contraseña unificado: primero carpintero; si no existe (404) prueba con cliente
+export const recuperarPasswordUnificado = async (email) => {
+  try {
+    const { data } = await axios.post(`${API}/api/carpintero/recuperarpassword`, { email })
+    return data
+  } catch (e) {
+    if (e.response?.status !== 404) throw e
+  }
+  const { data } = await axios.post(`${API}/api/cliente/recuperarpassword`, { email })
+  return data
+}
+
 // ---------- Perfil propio del cliente (HU-020) ----------
 export const actualizarPerfilCliente = async (cambios) =>
   (await axios.put(`${API}/api/cliente/actualizarperfil`, cambios, auth())).data

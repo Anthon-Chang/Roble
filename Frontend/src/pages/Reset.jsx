@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useEffect } from 'react'
 import {useFetch} from '../hooks/useFetch';
 import { ToastContainer } from 'react-toastify'
-import { useNavigate, useParams } from 'react-router'
+import { useNavigate, useParams, useSearchParams } from 'react-router'
 import { useForm } from 'react-hook-form'
 import { reglaPasswordNueva } from "../helpers/validaciones"
 
@@ -12,12 +12,16 @@ import { reglaPasswordNueva } from "../helpers/validaciones"
 const Reset = () => {
     const navigate = useNavigate()
     const { token } = useParams()
+    // El correo de recuperación agrega "?rol=cliente" para clientes (ver sendMail.js); sin ese
+    // parámetro se asume carpintero, que es el único rol que existía antes de este enlace.
+    const [searchParams] = useSearchParams()
+    const base = searchParams.get('rol') === 'cliente' ? 'cliente' : 'carpintero'
     const  fetchDataBackend  = useFetch()
     const [tokenback, setTokenBack] = useState(false)
     const { register, handleSubmit,watch, formState: { errors } } = useForm()
 
     const changePassword = async (dataForm) => {
-        const url = `${import.meta.env.VITE_BACKEND_URL}/api/carpintero/nuevopassword/${token}`
+        const url = `${import.meta.env.VITE_BACKEND_URL}/api/${base}/nuevopassword/${token}`
         await fetchDataBackend(url, dataForm,'POST')
         setTimeout(() => {
             if (dataForm.password === dataForm.confirmpassword) {
@@ -29,7 +33,7 @@ const Reset = () => {
 
     useEffect(() => {
         const verifyToken = async()=>{
-            const url = `${import.meta.env.VITE_BACKEND_URL}/api/carpintero/recuperarpassword/${token}`
+            const url = `${import.meta.env.VITE_BACKEND_URL}/api/${base}/recuperarpassword/${token}`
             await fetchDataBackend(url,'GET')
             setTokenBack(true)
         }

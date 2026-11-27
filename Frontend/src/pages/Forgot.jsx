@@ -1,18 +1,24 @@
 import {Link} from 'react-router'
 import { useForm } from 'react-hook-form';
-import { ToastContainer} from 'react-toastify'
-import { useFetch } from '../hooks/useFetch'
+import { ToastContainer, toast} from 'react-toastify'
+import { recuperarPasswordUnificado } from '../services/clienteService'
 import { reglaEmail } from "../helpers/validaciones"
 
 
 export const Forgot = () => {
 
     const { register, handleSubmit, formState: { errors } } = useForm()
-    const fetchDataBackend = useFetch()
 
-    const sendMail = async (dataForm) => {
-        const url = `${import.meta.env.VITE_BACKEND_URL}/api/carpintero/recuperarpassword`
-        await fetchDataBackend(url, dataForm,'POST')
+    const sendMail = async ({ email }) => {
+        const toastId = toast.loading("Procesando solicitud...")
+        try {
+            const data = await recuperarPasswordUnificado(email)
+            toast.dismiss(toastId)
+            toast.success(data?.msg || "Revisa tu correo electrónico")
+        } catch (error) {
+            toast.dismiss(toastId)
+            toast.error(error.response?.data?.msg || "No se pudo procesar la solicitud")
+        }
     }
 
 
