@@ -4,6 +4,9 @@ import Proyecto from "../models/Proyecto.js"
 import { masRecientesPrimero } from "../helpers/firestore.js"
 import { subirArchivo } from "../helpers/storage.js"
 import { limpiarTemporales, validarModelo3D } from "../helpers/archivos.js"
+import { prepararModeloParaSubir, LIMITE_SUBIDA_CLOUDINARY } from "../helpers/comprimirModelo.js"
+
+const MODELO_DEMASIADO_PESADO = "El modelo 3D sigue pesando más de 10 MB incluso comprimido: reduce la cantidad de polígonos o la resolución de las texturas e inténtalo de nuevo"
 
 const texto = (valor) => (typeof valor === "string" ? valor.trim() : "")
 
@@ -33,6 +36,11 @@ const enviarPropuesta = async (req, res) => {
         }
         const errorArchivo = await validarModelo3D(archivo)
         if (errorArchivo) return res.status(400).json({ msg: errorArchivo })
+
+        await prepararModeloParaSubir(archivo)
+        if (archivo.size > LIMITE_SUBIDA_CLOUDINARY) {
+            return res.status(400).json({ msg: MODELO_DEMASIADO_PESADO })
+        }
 
         const { url, path: ruta } = await subirArchivo(archivo, "propuestas3d")
         const propuesta = await Propuesta.crear({

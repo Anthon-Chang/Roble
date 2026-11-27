@@ -16,11 +16,15 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@gltf-transform/core": "^4.5.1",
+    "@gltf-transform/extensions": "^4.5.1",
+    "@gltf-transform/functions": "^4.5.1",
     "axios": "^1.13.2",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.11.0",
     "cors": "^2.8.6",
     "dotenv": "^17.2.3",
+    "draco3dgltf": "^1.5.9",
     "express": "^5.1.0",
     "express-fileupload": "^1.5.2",
     "express-rate-limit": "^8.2.1",
@@ -30,6 +34,7 @@
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^10.3.1",
+    "sharp": "^0.35.5",
     "socket.io": "^4.8.4",
     "socket.io-client": "^4.8.4",
     "stripe": "^19.3.0"

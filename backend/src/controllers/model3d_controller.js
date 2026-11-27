@@ -4,6 +4,9 @@ import Carpintero from "../models/carpintero.js"
 import { masRecientesPrimero } from "../helpers/firestore.js"
 import { subirArchivo, eliminarArchivo } from "../helpers/storage.js"
 import { comoLista, limpiarTemporales, validarModelo3D } from "../helpers/archivos.js"
+import { prepararModeloParaSubir, LIMITE_SUBIDA_CLOUDINARY } from "../helpers/comprimirModelo.js"
+
+const MODELO_DEMASIADO_PESADO = "El modelo 3D sigue pesando más de 10 MB incluso comprimido: reduce la cantidad de polígonos o la resolución de las texturas e inténtalo de nuevo"
 
 const texto = (valor) => (typeof valor === "string" ? valor.trim() : "")
 
@@ -103,6 +106,10 @@ export const createModel = async (req, res) => {
         if (archivo) {
             const error = await validarModelo3D(archivo)
             if (error) return res.status(400).json({ status: "error", message: error })
+            await prepararModeloParaSubir(archivo)
+            if (archivo.size > LIMITE_SUBIDA_CLOUDINARY) {
+                return res.status(400).json({ status: "error", message: MODELO_DEMASIADO_PESADO })
+            }
             ;({ url: modelUrl, path: modelPath } = await subirArchivo(archivo, "modelos3d"))
             formato = path.extname(archivo.name).toLowerCase().slice(1)
         } else if (texto(req.body.modelUrl)) {
@@ -160,6 +167,10 @@ export const updateModel = async (req, res) => {
             }
             const error = await validarModelo3D(archivo)
             if (error) return res.status(400).json({ status: "error", message: error })
+            await prepararModeloParaSubir(archivo)
+            if (archivo.size > LIMITE_SUBIDA_CLOUDINARY) {
+                return res.status(400).json({ status: "error", message: MODELO_DEMASIADO_PESADO })
+            }
             const { url, path: ruta } = await subirArchivo(archivo, "modelos3d")
             Object.assign(cambios, { modelUrl: url, modelPath: ruta, formato: path.extname(archivo.name).toLowerCase().slice(1) })
         }

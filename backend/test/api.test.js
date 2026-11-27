@@ -820,8 +820,8 @@ describe("Carpinteros sin aprobar y rutas retiradas", () => {
 
 describe("Cabeceras, CORS, subidas y errores", () => {
     test("CORS solo responde a orígenes de la lista y helmet añade sus cabeceras", async () => {
-        const permitido = await crudo("GET", "/api/ping", { Origin: "https://rob1e.netlify.app" })
-        assert.equal(permitido.headers["access-control-allow-origin"], "https://rob1e.netlify.app")
+        const permitido = await crudo("GET", "/api/ping", { Origin: "https://roblecarpinter.netlify.app" })
+        assert.equal(permitido.headers["access-control-allow-origin"], "https://roblecarpinter.netlify.app")
         const ajeno = await crudo("GET", "/api/ping", { Origin: "https://sitio-malicioso.example" })
         assert.equal(ajeno.headers["access-control-allow-origin"], undefined)
         const preflight = await crudo("OPTIONS", "/api/proyecto/listar", {
@@ -836,7 +836,7 @@ describe("Cabeceras, CORS, subidas y errores", () => {
         process.env.CORS_ORIGINS = "https://otro-frontend.example/"
         try {
             assert.equal((await crudo("GET", "/api/ping", { Origin: "https://otro-frontend.example" })).headers["access-control-allow-origin"], "https://otro-frontend.example")
-            assert.equal((await crudo("GET", "/api/ping", { Origin: "https://rob1e.netlify.app" })).headers["access-control-allow-origin"], undefined)
+            assert.equal((await crudo("GET", "/api/ping", { Origin: "https://roblecarpinter.netlify.app" })).headers["access-control-allow-origin"], undefined)
         } finally {
             delete process.env.CORS_ORIGINS
         }
