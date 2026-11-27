@@ -1,7 +1,8 @@
 /* eslint-disable react/prop-types */
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { toast } from "react-toastify"
 import storeTreatments from "../../context/storEstado"
+import storeProfile from "../../context/storeProfile"
 import {
     useStripe,
     useElements,
@@ -32,6 +33,17 @@ function ModalPayment({ treatment }) {
     const [loading, setLoading] = useState(false)
     const [cedula, setCedula] = useState("")
     const [errorCedula, setErrorCedula] = useState("")
+
+    // Cédula ya registrada en la cuenta del cliente (selector individual: evita el bug de
+    // loop infinito de zustand v5 al usar el store sin selector dentro de un efecto)
+    const cedulaPerfil = storeProfile((s) => s.user?.cedulaCliente || s.user?.cedula || "")
+    const cedulaAutocompletada = /^\d{10}$/.test(cedulaPerfil)
+
+    // Se autocompleta con la cédula del perfil del cliente; si no coincidiera, el backend
+    // la rechaza igual, así que se bloquea la edición para evitar errores de tipeo.
+    useEffect(() => {
+        if (cedulaAutocompletada) setCedula(cedulaPerfil)
+    }, [cedulaPerfil, cedulaAutocompletada])
 
     // Precio normal, IVA y precio final: deben calcularse igual aquí y en el backend,
     // porque "precioFinal" es lo que realmente se le cobra a la tarjeta.
@@ -167,14 +179,21 @@ function ModalPayment({ treatment }) {
                             value={cedula}
                             onChange={handleCedulaChange}
                             onBlur={() => setErrorCedula(validarCedula(cedula))}
+                            readOnly={cedulaAutocompletada}
                             className={`block w-full rounded-md border py-2 px-3 text-gray-700 ${
                                 errorCedula ? "border-red-400" : "border-gray-300"
-                            }`}
+                            } ${cedulaAutocompletada ? "bg-gray-100 cursor-not-allowed" : "bg-white"}`}
                         />
                         {errorCedula && <p className="text-red-600 text-xs mt-1">{errorCedula}</p>}
-                        <p className="text-gray-400 text-xs mt-1">
-                            Debe coincidir con la cédula registrada en tu cuenta, para confirmar que eres tú quien paga.
-                        </p>
+                        {cedulaAutocompletada ? (
+                            <p className="text-gray-400 text-xs mt-1">
+                                Tomada automáticamente de tu perfil. Si es incorrecta, actualízala en tu perfil antes de pagar.
+                            </p>
+                        ) : (
+                            <p className="text-gray-400 text-xs mt-1">
+                                Debe coincidir con la cédula registrada en tu cuenta, para confirmar que eres tú quien paga.
+                            </p>
+                        )}
                     </div>
 
                     {/* Aviso si el formulario de Stripe aún no cargó: evita que parezca "trabado" sin explicación */}
