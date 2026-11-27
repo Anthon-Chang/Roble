@@ -3,7 +3,7 @@
 //
 // - CORS_ORIGINS (separados por comas) reemplaza la lista por defecto cuando está definida.
 // - Sin la variable: el frontend de producción y, fuera de producción, el servidor de desarrollo local.
-const FRONTEND_PRODUCCION = ["https://rob1e.netlify.app"]
+const FRONTEND_PRODUCCION = ["https://roblecarpinter.netlify.app"]
 const FRONTEND_LOCAL = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
 const normalizar = (origen) => String(origen).trim().replace(/\/+$/, "")
