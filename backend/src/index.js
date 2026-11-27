@@ -7,7 +7,7 @@ import { Server } from "socket.io";
 import { chatSocket } from "./sockets/chat.socket.js";
 import { origenPermitido } from "./config/cors.js";
 
-// Verificar la conexión con Firebase (Firestore y Storage)
+// Verificar la conexión con Firestore
 await conectarFirebase();
 
 // Crear servidor HTTP

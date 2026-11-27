@@ -14,7 +14,7 @@ const leerNumero = (valor) => {
 // tienen propietario (creadoPor) y por tanto solo los gestiona un administrador.
 const puedeGestionar = (plan, user) => user.rol === "administrador" || (!!plan.creadoPor && plan.creadoPor === user._id)
 
-// Crear un nuevo plano (imagen en Firebase Storage, campo multipart "image")
+// Crear un nuevo plano (imagen en Cloudinary, campo multipart "image")
 const createPlan = async (req, res) => {
   try {
     const { name, style, description } = req.body

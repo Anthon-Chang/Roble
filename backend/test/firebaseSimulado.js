@@ -62,19 +62,30 @@ export const crearFirestoreSimulado = () => {
     }
 }
 
-export const crearBucketSimulado = () => {
+// Simula el SDK de Cloudinary (solo lo que usa helpers/storage.js).
+// `archivos` se indexa por public_id; `tieneRuta` acepta tanto un public_id
+// suelto como una ruta empaquetada "resource_type:public_id".
+export const crearCloudinarySimulado = () => {
     const archivos = new Map()
+    const idDe = (ruta) => {
+        const i = ruta.indexOf(":")
+        return i === -1 ? ruta : ruta.slice(i + 1)
+    }
     return {
-        name: "roble-prueba.firebasestorage.app",
         archivos,
-        async upload(rutaLocal, { destination, metadata }) {
-            archivos.set(destination, { contenido: fs.readFileSync(rutaLocal), metadata })
-        },
-        file(ruta) {
-            return {
-                async save(buffer, { metadata }) { archivos.set(ruta, { contenido: buffer, metadata }) },
-                async delete() { archivos.delete(ruta) },
-            }
+        tieneRuta: (ruta) => archivos.has(idDe(ruta)),
+        uploader: {
+            async upload(origen, { public_id }) {
+                const buffer = typeof origen === "string" && origen.startsWith("data:")
+                    ? Buffer.from(origen.split(",")[1], "base64")
+                    : fs.readFileSync(origen)
+                archivos.set(public_id, buffer)
+                return { secure_url: `https://cloudinary-simulado.test/${public_id}`, public_id, resource_type: "raw" }
+            },
+            async destroy(public_id) {
+                archivos.delete(public_id)
+                return { result: "ok" }
+            },
         },
     }
 }

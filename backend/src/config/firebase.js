@@ -1,10 +1,8 @@
 import "./env.js"
 import { initializeApp, getApps, getApp, cert } from "firebase-admin/app"
 import { getFirestore } from "firebase-admin/firestore"
-import { getStorage } from "firebase-admin/storage"
 
 let db = null
-let bucket = null
 
 const leerCredenciales = () => {
     // Opción B: JSON completo de la cuenta de servicio (texto JSON o en base64)
@@ -30,24 +28,17 @@ const leerCredenciales = () => {
 
 const inicializar = () => {
     if (!getApps().length) {
-        // Con los emuladores de Firebase no se necesitan credenciales reales.
+        // Con el emulador de Firestore no se necesitan credenciales reales.
         const usaEmulador = Boolean(process.env.FIRESTORE_EMULATOR_HOST)
         initializeApp(
             usaEmulador
-                ? {
-                      projectId: process.env.FIREBASE_PROJECT_ID || "demo-roble",
-                      storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "demo-roble.appspot.com",
-                  }
-                : {
-                      credential: cert(leerCredenciales()),
-                      storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
-                  }
+                ? { projectId: process.env.FIREBASE_PROJECT_ID || "demo-roble" }
+                : { credential: cert(leerCredenciales()) }
         )
-        if (usaEmulador) console.log(`🧪 Usando emuladores de Firebase (Firestore ${process.env.FIRESTORE_EMULATOR_HOST})`)
+        if (usaEmulador) console.log(`🧪 Usando emulador de Firestore (${process.env.FIRESTORE_EMULATOR_HOST})`)
     }
     db = getFirestore(getApp())
     db.settings({ ignoreUndefinedProperties: true })
-    bucket = getStorage(getApp()).bucket()
 }
 
 export const getDb = () => {
@@ -55,24 +46,18 @@ export const getDb = () => {
     return db
 }
 
-export const getBucket = () => {
-    if (!bucket) inicializar()
-    return bucket
-}
-
 // Verifica que Firestore responde; se usa al arrancar el servidor.
 export const conectarFirebase = async () => {
     try {
         await getDb().collection("_salud").limit(1).get()
-        console.log(`✅ Firebase conectado (Firestore y Storage: ${getBucket().name})`)
+        console.log("✅ Firestore conectado")
     } catch (error) {
-        console.error("❌ Error al conectar con Firebase:", error.message)
+        console.error("❌ Error al conectar con Firestore:", error.message)
         process.exit(1)
     }
 }
 
-// Solo para pruebas: permite inyectar un Firestore y un bucket simulados.
-export const __usarFirebaseSimulado = ({ db: dbSimulado, bucket: bucketSimulado }) => {
+// Solo para pruebas: permite inyectar un Firestore simulado.
+export const __usarFirebaseSimulado = ({ db: dbSimulado }) => {
     db = dbSimulado
-    bucket = bucketSimulado
 }

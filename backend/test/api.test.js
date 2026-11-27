@@ -6,7 +6,7 @@ import fs from "node:fs"
 import jwt from "jsonwebtoken"
 import { Server } from "socket.io"
 import { io as clienteSocket } from "socket.io-client"
-import { crearFirestoreSimulado, crearBucketSimulado } from "./firebaseSimulado.js"
+import { crearFirestoreSimulado, crearCloudinarySimulado } from "./firebaseSimulado.js"
 
 process.env.JWT_SECRET = "secreto-de-prueba"
 process.env.STRIPE_PRIVATE_KEY = "sk_test_falsa"
@@ -19,7 +19,7 @@ delete process.env.ADMIN_NOTIFY_EMAIL
 process.env.RATE_LIMIT_DISABLED = "true"
 
 const db = crearFirestoreSimulado()
-const bucket = crearBucketSimulado()
+const bucket = crearCloudinarySimulado()
 
 // Los correos (Resend) se interceptan y se guardan para poder leer contraseñas temporales
 const correos = []
@@ -37,7 +37,9 @@ let Administrador, encryptPassword
 
 before(async () => {
     const { __usarFirebaseSimulado } = await import("../src/config/firebase.js")
-    __usarFirebaseSimulado({ db, bucket })
+    __usarFirebaseSimulado({ db })
+    const { __usarCloudinarySimulado } = await import("../src/config/cloudinary.js")
+    __usarCloudinarySimulado(bucket)
     const { default: app } = await import("../src/server.js")
     ;({ default: Administrador } = await import("../src/models/Administrador.js"))
     ;({ encryptPassword } = await import("../src/helpers/password.js"))
@@ -175,8 +177,8 @@ describe("HU-004 Cargar CV", () => {
 
         const ok = await api("POST", "/api/carpintero/cv", { token: c.token, form: formulario({}, { cv: { nombre: "cv.pdf", contenido: PDF, tipo: "application/pdf" } }) })
         assert.equal(ok.status, 200)
-        assert.match(ok.datos.cvUrl, /firebasestorage\.googleapis\.com/)
-        assert.ok(bucket.archivos.has(`cvs/${c.id}/cv.pdf`))
+        assert.match(ok.datos.cvUrl, /cloudinary-simulado\.test/)
+        assert.ok(bucket.tieneRuta(`cvs/${c.id}/cv.pdf`))
 
         const mio = await api("GET", "/api/carpintero/cv", { token: c.token })
         assert.equal(mio.status, 200)
@@ -274,7 +276,7 @@ describe("HU-006 Gestionar mobiliario", () => {
         const mueble = creado.datos.mueble
         assert.equal(mueble.carpintero, dueno.id)
         assert.equal(mueble.imagenes.length, 1)
-        assert.ok(bucket.archivos.has(mueble.imagenes[0].path))
+        assert.ok(bucket.tieneRuta(mueble.imagenes[0].path))
 
         assert.equal((await api("PUT", `/api/mueble/${mueble._id}`, { token: otro.token, json: { nombre: "Robada" } })).status, 403)
         assert.equal((await api("DELETE", `/api/mueble/${mueble._id}`, { token: otro.token })).status, 403)
@@ -289,7 +291,7 @@ describe("HU-006 Gestionar mobiliario", () => {
 
         const eliminado = await api("DELETE", `/api/mueble/${mueble._id}`, { token: dueno.token })
         assert.equal(eliminado.status, 200)
-        assert.equal(bucket.archivos.has(mueble.imagenes[0].path), false)
+        assert.equal(bucket.tieneRuta(mueble.imagenes[0].path), false)
         assert.equal((await api("GET", `/api/mueble/${mueble._id}`, { token: dueno.token })).status, 404)
     })
 })
@@ -317,7 +319,7 @@ describe("HU-007 / HU-008 Catálogo 3D", () => {
         assert.equal(creado.status, 201)
         assert.equal(creado.datos.data.formato, "glb")
         assert.equal(creado.datos.data.carpintero, aprobado.id)
-        assert.ok(bucket.archivos.has(creado.datos.data.modelPath))
+        assert.ok(bucket.tieneRuta(creado.datos.data.modelPath))
 
         // El modelo de un carpintero sin aprobar no aparece en el catálogo
         const oculto = await db.collection("modelos3d").doc()
@@ -350,7 +352,7 @@ describe("HU-007 / HU-008 Catálogo 3D", () => {
         assert.equal(editado.datos.data.name, "Mesa 2")
 
         assert.equal((await api("DELETE", `/api/models/${modelo._id}`, { token: dueno.token })).status, 200)
-        assert.equal(bucket.archivos.has(modelo.modelPath), false)
+        assert.equal(bucket.tieneRuta(modelo.modelPath), false)
         assert.equal((await api("GET", `/api/models/${modelo._id}`, { token: dueno.token })).status, 404)
     })
 
@@ -410,7 +412,7 @@ describe("HU-010 / HU-011 Proyectos y requerimientos", () => {
         const proyecto = ok.datos.proyecto
         assert.equal(proyecto.carpintero._id, carpintero.id)
         assert.equal(proyecto.cliente, cliente.id)
-        assert.match(proyecto.imagenProyecto, /firebasestorage/)
+        assert.match(proyecto.imagenProyecto, /cloudinary-simulado\.test/)
 
         // Cliente: lista y detalle propios
         const miLista = await api("GET", "/api/proyecto/listar", { token: cliente.token })

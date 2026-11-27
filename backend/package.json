@@ -7,7 +7,9 @@
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "test": "node --test test/api.test.js",
-    "crear-admin": "node scripts/crearAdmin.js"
+    "crear-admin": "node scripts/crearAdmin.js",
+    "migrar:exportar": "node scripts/migrarDatos.js exportar",
+    "migrar:importar": "node scripts/migrarDatos.js importar"
   },
   "keywords": [],
   "author": "",
@@ -16,6 +18,7 @@
   "dependencies": {
     "axios": "^1.13.2",
     "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.11.0",
     "cors": "^2.8.6",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",

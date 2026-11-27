@@ -37,6 +37,11 @@ backend/firestore-debug.log
 emulator-data/
 backend/emulator-data/
 
+# ==========================================
+# Volcado de migración a Firebase real (datos personales)
+# ==========================================
+scripts/migracion-dump.json
+
 # Firestore export files
 *.overall_export_metadata
 *.export_metadata

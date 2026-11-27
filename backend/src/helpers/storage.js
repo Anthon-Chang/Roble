@@ -1,40 +1,40 @@
-import crypto from "crypto"
 import fs from "fs-extra"
-import { getBucket } from "../config/firebase.js"
-
-// URL pública con token de descarga (funciona aunque el bucket tenga acceso uniforme).
-const construirUrl = (bucket, ruta, token) => {
-    // Con el emulador de Storage la URL apunta al servidor local
-    const emulador = process.env.FIREBASE_STORAGE_EMULATOR_HOST
-    const origen = emulador ? `http://${emulador}` : "https://firebasestorage.googleapis.com"
-    return `${origen}/v0/b/${bucket.name}/o/${encodeURIComponent(ruta)}?alt=media&token=${token}`
-}
+import crypto from "crypto"
+import { getCloudinary } from "../config/cloudinary.js"
 
 const rutaUnica = (carpeta, nombreOriginal = "archivo") => {
     const limpio = String(nombreOriginal).replace(/[^a-zA-Z0-9._-]/g, "_").slice(-80)
     return `${carpeta}/${Date.now()}-${crypto.randomBytes(4).toString("hex")}-${limpio}`
 }
 
-// Sube un archivo temporal (de express-fileupload) a Firebase Storage y borra el temporal.
+// `path` viaja como "<resource_type>:<public_id>" para poder borrar el archivo
+// correcto más tarde (Cloudinary exige el resource_type exacto al eliminar).
+const empaquetarRuta = (resourceType, publicId) => `${resourceType}:${publicId}`
+const desempaquetarRuta = (ruta) => {
+    const i = ruta.indexOf(":")
+    return i === -1 ? { resourceType: "image", publicId: ruta } : { resourceType: ruta.slice(0, i), publicId: ruta.slice(i + 1) }
+}
+
+// Sube un archivo temporal (de express-fileupload) a Cloudinary y borra el temporal.
 export const subirArchivo = async (archivo, carpeta, { rutaFija } = {}) => {
-    const bucket = getBucket()
-    const destino = rutaFija || rutaUnica(carpeta, archivo.name)
-    const token = crypto.randomUUID()
+    const cloudinary = getCloudinary()
+    const publicId = rutaFija || rutaUnica(carpeta, archivo.name)
     try {
-        await bucket.upload(archivo.tempFilePath, {
-            destination: destino,
-            metadata: {
-                contentType: archivo.mimetype,
-                metadata: { firebaseStorageDownloadTokens: token },
-            },
+        const resultado = await cloudinary.uploader.upload(archivo.tempFilePath, {
+            public_id: publicId,
+            resource_type: "auto",
+            overwrite: Boolean(rutaFija),
+            invalidate: Boolean(rutaFija),
+            use_filename: false,
+            unique_filename: false,
         })
+        return { url: resultado.secure_url, path: empaquetarRuta(resultado.resource_type, resultado.public_id) }
     } catch (error) {
-        console.error("❌ Error al subir a Firebase Storage:", error.message)
+        console.error("❌ Error al subir a Cloudinary:", error.message)
         throw new Error("Error al subir el archivo")
     } finally {
         await fs.remove(archivo.tempFilePath).catch(() => {})
     }
-    return { url: construirUrl(bucket, destino, token), path: destino }
 }
 
 // Sube una imagen recibida en base64 (por ejemplo, la generada con IA).
@@ -45,26 +45,26 @@ export const subirBase64 = async (base64, carpeta) => {
     const buffer = Buffer.from(contenido, "base64")
     if (buffer.length > 8 * 1024 * 1024) throw new Error("La imagen supera los 8 MB")
 
-    const bucket = getBucket()
-    const extension = mimetype.split("/")[1].replace("jpeg", "jpg")
-    const destino = rutaUnica(carpeta, `ia.${extension}`)
-    const token = crypto.randomUUID()
+    const cloudinary = getCloudinary()
+    const publicId = rutaUnica(carpeta, "ia")
     try {
-        await bucket.file(destino).save(buffer, {
-            metadata: { contentType: mimetype, metadata: { firebaseStorageDownloadTokens: token } },
+        const resultado = await cloudinary.uploader.upload(`data:${mimetype};base64,${contenido}`, {
+            public_id: publicId,
+            resource_type: "image",
         })
+        return { url: resultado.secure_url, path: empaquetarRuta(resultado.resource_type, resultado.public_id) }
     } catch (error) {
-        console.error("❌ Error al subir base64 a Firebase Storage:", error.message)
+        console.error("❌ Error al subir base64 a Cloudinary:", error.message)
         throw new Error("Error al subir la imagen en base64")
     }
-    return { url: construirUrl(bucket, destino, token), path: destino }
 }
 
 export const eliminarArchivo = async (ruta) => {
     if (!ruta) return
+    const { resourceType, publicId } = desempaquetarRuta(ruta)
     try {
-        await getBucket().file(ruta).delete({ ignoreNotFound: true })
+        await getCloudinary().uploader.destroy(publicId, { resource_type: resourceType, invalidate: true })
     } catch (error) {
-        console.error("⚠️ No se pudo eliminar el archivo de Storage:", ruta, error.message)
+        console.error("⚠️ No se pudo eliminar el archivo de Cloudinary:", ruta, error.message)
     }
 }
