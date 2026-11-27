@@ -50,6 +50,8 @@ import AdminQuejas from './pages/AdminQuejas'
 import AdminSanciones from './pages/AdminSanciones'
 import MisSanciones from './pages/MisSanciones'
 import Mensajes from './pages/Mensajes'
+import Landing from './pages/Landing'
+// (puedes borrar los imports de Home, Nosotros, Servicios y Contactanos si ya no se usan sueltos en otro lado)
 
 const DashboardInicio = () => {
   const rol = storeAuth((state) => state.rol)
@@ -89,18 +91,15 @@ function App() {
         
         <Route element={<PublicRoute />}>
           <Route path="forbidden" element={<Forbidden />} />
-          <Route index element={<Home/>}/>
-          <Route path='home' element={<Home/>}/>
+          <Route index element={<Landing/>}/>
+          <Route path='home' element={<Landing/>}/>
           <Route path='admin/login' element={<AdminLogin />} />
           <Route path='login' element={<Login/>}/>
           <Route path='register' element={<Register/>}/>
           <Route path='forgot/:id' element={<Forgot/>}/>
           <Route path='confirm/:token' element={<Confirm/>}/>
           <Route path='reset/:token' element={<Reset/>}/>
-          <Route path='viewplane' element={<ViewPlane />} />
-          <Route path='/nosotros' element={<Nosotros />} />
-          <Route path='/servicios' element={<Servicios />} />
-          <Route path='/contactanos' element={<Contactanos />} />
+          <Route path='viewplane' element={<ViewPlane />} />  
           <Route path='/verPlano' element={<ViewPlane/>}/>
           <Route path='*' element={<NotFound />} />
         </Route>
