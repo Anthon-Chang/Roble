@@ -1,7 +1,8 @@
 import { useState } from "react"
 import { toast } from "react-toastify"
 import storeAuth from "../../context/storeAuth"
-import { aprobarPropuesta, rechazarPropuesta, mensajeError } from "../../services/propuestaService"
+import { aprobarPropuesta, rechazarPropuesta, mensajeError, descargarArchivo } from "../../services/propuestaService"
+import ThreeViewer from "../model3D/model3DViewer.jsx"
 
 const BADGE = {
   Pendiente: "bg-yellow-100 text-yellow-700",
@@ -15,6 +16,7 @@ const ListaPropuestas = ({ propuestas, onCambio }) => {
   const { rol } = storeAuth()
   const [idEnCurso, setIdEnCurso] = useState(null)
   const [motivo, setMotivo] = useState({})
+  const [visorAbierto, setVisorAbierto] = useState({})
 
   const aprobar = async (id) => {
     setIdEnCurso(id)
@@ -67,14 +69,41 @@ const ListaPropuestas = ({ propuestas, onCambio }) => {
 
           {p.description && <p className="text-sm text-gray-700">{p.description}</p>}
 
-          <a
-            href={p.modelUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block text-sm underline text-amber-700"
-          >
-            Ver modelo 3D ({p.formato})
-          </a>
+          {(() => {
+            const previsualizable = ["glb", "gltf"].includes(p.formato)
+            const abierto = !!visorAbierto[p._id]
+            return (
+              <>
+                <div className="flex flex-wrap items-center gap-3">
+                  {previsualizable ? (
+                    <button
+                      onClick={() => setVisorAbierto((v) => ({ ...v, [p._id]: !v[p._id] }))}
+                      className="px-4 py-1.5 bg-gray-800 text-white rounded-lg hover:bg-gray-700 text-sm"
+                    >
+                      {abierto ? "Ocultar visor 3D" : "Visualizar e interactuar"}
+                    </button>
+                  ) : (
+                    <p className="text-xs text-amber-800 bg-amber-50 border border-amber-300 rounded-md px-2 py-1">
+                      La vista interactiva solo está disponible para .glb y .gltf.
+                    </p>
+                  )}
+                  <button
+                    onClick={() => descargarArchivo(p.modelUrl, `propuesta.${p.formato || "glb"}`)}
+                    className="px-4 py-1.5 bg-amber-700 text-white rounded-lg hover:bg-amber-800 text-sm"
+                  >
+                    Descargar modelo ({p.formato})
+                  </button>
+                </div>
+
+                {abierto && previsualizable && (
+                  <div className="max-w-xl">
+                    <ThreeViewer modelUrl={p.modelUrl} />
+                    <p className="text-xs text-gray-500 mt-2">Arrastra para rotar, usa la rueda para acercar y clic derecho para mover.</p>
+                  </div>
+                )}
+              </>
+            )
+          })()}
 
           {p.estado === "Rechazada" && p.motivoRechazo && (
             <p className="text-sm text-red-700">Motivo de rechazo: {p.motivoRechazo}</p>

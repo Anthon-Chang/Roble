@@ -37,3 +37,19 @@ export const aprobarPropuesta = async (id) =>
 
 export const rechazarPropuesta = async (id, motivo) =>
   (await axios.put(`${API}/api/propuesta/rechazar/${id}`, { motivo }, auth())).data // { msg, propuesta }
+
+// Descarga: si el bucket bloquea el fetch por CORS, abre el archivo en otra pestaña
+export const descargarArchivo = async (url, nombre) => {
+  try {
+    const res = await fetch(url)
+    if (!res.ok) throw new Error()
+    const href = URL.createObjectURL(await res.blob())
+    const a = document.createElement("a")
+    a.href = href
+    a.download = nombre
+    a.click()
+    URL.revokeObjectURL(href)
+  } catch {
+    window.open(url, "_blank", "noopener,noreferrer")
+  }
+}
