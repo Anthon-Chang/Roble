@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 
 const FACTOR_ACERCAR = 0.85;
@@ -73,7 +74,12 @@ export default function ThreeViewer({ modelUrl }) {
     scene.add(fillLight);
 
     // --- LOAD SELECTED MODEL ---
+    // Los modelos se comprimen con Draco en el backend antes de subirlos a Cloudinary,
+    // así que el loader necesita el decoder de Draco para poder leerlos.
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath("/draco/");
     const loader = new GLTFLoader();
+    loader.setDRACOLoader(dracoLoader);
     loader.load(
       modelUrl,
       (gltf) => {
@@ -138,6 +144,7 @@ export default function ThreeViewer({ modelUrl }) {
     // --- CLEANUP ---
     return () => {
       renderer.dispose();
+      dracoLoader.dispose();
       mount.removeChild(renderer.domElement);
       window.removeEventListener("resize", handleResize);
     };
